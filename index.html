@@ -406,6 +406,23 @@
   .cta .actions { display: flex; gap: 12px; flex-wrap: wrap; }
   .fine { margin: 14px 0 0; font-size: 13px; color: var(--faint); }
 
+  /* Vault */
+  .vault { border-top: 1px solid var(--line); }
+  .vault-head { display: grid; grid-template-columns: 1.1fr .9fr; gap: clamp(28px, 6vw, 96px); align-items: end; margin-bottom: clamp(28px, 4vw, 48px); }
+  .vault-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; }
+  .vcard { background: var(--bg-2); border: 1px solid var(--line); border-radius: 20px; padding: 22px 24px; }
+  .vcard.main { background: linear-gradient(160deg, rgba(185,207,104,.16), rgba(185,207,104,.04)); border-color: rgba(185,207,104,.3); }
+  .vcard .lbl { display: block; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); margin-bottom: 10px; }
+  .vcard b { display: block; font-family: var(--display); font-weight: 800; font-size: clamp(40px, 4vw, 64px); line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .vcard.main b { font-size: clamp(56px, 6vw, 96px); }
+  .vcard b small { font-size: 18px; color: var(--muted); font-weight: 600; margin-left: 4px; font-family: var(--body); }
+  .vcard b.st { font-size: 22px; padding-top: 12px; }
+  .vcard b.st.ok { color: var(--moss); } .vcard b.st.bad { color: #e08a7a; }
+  .vcard .sub { display: block; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .vault-foot { display: flex; justify-content: space-between; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 18px; }
+  .vault-foot code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: var(--muted); background: rgba(238,240,232,.05); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; word-break: break-all; }
+  .vault-foot .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
   /* Footer */
   .footer { padding: 36px 0 44px; }
   .footer .inner { display: flex; justify-content: space-between; align-items: center; gap: 18px; flex-wrap: wrap; color: var(--faint); font-size: 13px; }
@@ -417,7 +434,9 @@
   .notrans * { transition: none !important; animation: none !important; }
 
   @media (max-width: 860px) {
-    .two, .ledger-grid, .cta .inner { grid-template-columns: 1fr; }
+    .two, .ledger-grid, .cta .inner, .vault-head { grid-template-columns: 1fr; }
+    .vault-grid { grid-template-columns: 1fr 1fr; }
+    .vcard.main { grid-column: 1 / -1; }
     .steps, .numbers { grid-template-columns: 1fr; }
     .step + .step, .num + .num { padding-left: 0; border-left: 0; }
     .step { padding-right: 0; }
@@ -659,15 +678,55 @@
   </div>
 </section>
 
+<!-- Treasury proof, live from Robinhood Chain -->
+<section class="section vault" id="vault">
+  <div class="wrap">
+    <div class="vault-head">
+      <div>
+        <p class="eyebrow">The pool</p>
+        <h3 class="big">The money is<br><em>on-chain</em>.</h3>
+      </div>
+      <p class="lede">Payouts come from one contract on Robinhood Chain that anyone can read. Balance, caps and every payout, live. No dashboard of ours to trust.</p>
+    </div>
+    <div class="vault-grid">
+      <div class="vcard main"><span class="lbl">Pool balance</span><b id="v-bal">–<small>ETH</small></b><span class="sub" id="v-usd">Reading Robinhood Chain…</span></div>
+      <div class="vcard"><span class="lbl">Payouts</span><b id="v-n">–</b><span class="sub">on-chain swaps to runners</span></div>
+      <div class="vcard"><span class="lbl">Cap per claim</span><b id="v-cap">–<small>ETH</small></b><span class="sub">bounded by the contract</span></div>
+      <div class="vcard"><span class="lbl">Status</span><b id="v-status" class="st">–</b><span class="sub">read from the contract</span></div>
+    </div>
+    <div class="vault-foot">
+      <code>0xE547a0ca5879a49C8d9ac8112a8fbef7A0F372a6</code>
+      <div class="actions"><a class="btn primary" href="treasury.html">See every payout</a><a class="btn ghost" href="https://robinhoodchain.blockscout.com/address/0xE547a0ca5879a49C8d9ac8112a8fbef7A0F372a6" target="_blank" rel="noopener">Explorer ↗</a></div>
+    </div>
+  </div>
+</section>
+
 <footer class="footer">
   <div class="wrap inner">
     <a class="brand" href="#">Sweat-to-Stock</a>
-    <nav><a href="#manifesto">Idea</a><a href="#how">How it works</a><a href="#faq">FAQ</a><a href="treasury.html">Treasury</a><a href="app/">App</a></nav>
+    <nav><a href="#manifesto">Idea</a><a href="#how">How it works</a><a href="#faq">FAQ</a><a href="#vault">Treasury</a><a href="app/">App</a></nav>
     <span>© 2026 Sweat-to-Stock</span>
   </div>
 </footer>
 
 <script>
+// Vault proof: read the treasury straight from Robinhood Chain (no server of ours involved).
+(async () => {
+  const RPC = 'https://rpc.mainnet.chain.robinhood.com', T = '0xE547a0ca5879a49C8d9ac8112a8fbef7A0F372a6';
+  const QUOTER = '0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7', WETH = '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73', USDG = '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
+  const $ = id => document.getElementById(id); let idc = 1;
+  const rpc = async (m, p) => { const r = await fetch(RPC, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: idc++, method: m, params: p }) }); const j = await r.json(); if (j.error) throw new Error(j.error.message); return j.result; };
+  const call = (to, data) => rpc('eth_call', [{ to, data }, 'latest']), pad = h => h.replace(/^0x/, '').padStart(64, '0'), eth = h => Number(BigInt(h)) / 1e18, fmt = (n, d) => n.toLocaleString('en-GB', { maximumFractionDigits: d });
+  try {
+    const [bal, cap, paused, latest] = await Promise.all([rpc('eth_getBalance', [T, 'latest']), call(T, '0xd6db6834'), call(T, '0x5c975abb'), rpc('eth_blockNumber', [])]);
+    $('v-bal').innerHTML = fmt(eth(bal), 4) + '<small>ETH</small>'; $('v-cap').innerHTML = fmt(eth(cap), 3) + '<small>ETH</small>';
+    const st = $('v-status'); st.textContent = BigInt(paused) ? 'Paused' : 'Live'; st.classList.add(BigInt(paused) ? 'bad' : 'ok');
+    try { const out = await call(QUOTER, '0xc6a5026a' + pad(WETH) + pad(USDG) + pad((10n ** 18n).toString(16)) + pad('64') + pad('0')); const px = Number(BigInt('0x' + out.slice(2, 66))) / 1e6; $('v-usd').textContent = '≈ ' + fmt(eth(bal) * px, 2) + ' USD · ' + fmt(px, 0) + ' USD per ETH, live Uniswap quote'; } catch (e) { $('v-usd').textContent = 'Live balance of the payout contract'; }
+    let n = 0; const last = Number(BigInt(latest));
+    for (let from = 54462966; from <= last; from += 100000) n += (await rpc('eth_getLogs', [{ address: T, fromBlock: '0x' + from.toString(16), toBlock: '0x' + Math.min(last, from + 99999).toString(16), topics: [['0x111c984efbcf6f3710f863072e32899749665b14c8dbda4d377b4c1cf65ea35f', '0xc0192181744813a46482f256f14edb3dc8a73367d12637340f9c81ac1769a364']] }])).length;
+    $('v-n').textContent = n;
+  } catch (e) { $('v-usd').textContent = 'Chain unreachable right now'; }
+})();
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 (() => {
   const FRAME_COUNT = 193;              // landing/frames/f_0001.webp … f_0193.webp

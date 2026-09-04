@@ -258,21 +258,39 @@
   .side-empty { display: grid; place-items: center; height: 60vh; color: var(--faint); font-size: 14px; text-align: center; padding: 20px; }
   .side-empty b { display: block; font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 28px; color: var(--muted); margin-bottom: 8px; }
 
+  .tabbar .desk, .tabbar .spacer, .tabbar .foot { display: none; }
   @media (min-width: 960px) {
-    #app { max-width: 1440px; display: grid; grid-template-columns: 420px minmax(0, 1fr); grid-template-rows: auto 1fr auto; min-height: 100vh; }
-    .top { grid-column: 1 / -1; grid-row: 1; }
-    main { grid-column: 1; grid-row: 2; padding-bottom: 24px; }
-    .tabbar { position: sticky; grid-column: 1; grid-row: 3; max-width: none; margin: 0; padding-bottom: 14px; }
-    #side { display: block !important; grid-column: 2; grid-row: 2 / 4; border-left: 1px solid var(--line); }
+    /* desktop: navigation rail | main column | run detail */
+    #app { max-width: none; display: grid; grid-template-columns: 224px 560px minmax(0, 1fr); grid-template-rows: auto 1fr; min-height: 100vh; }
+    .top { grid-column: 1 / -1; grid-row: 1; padding: 18px 28px 14px; border-bottom: 1px solid var(--line); background: var(--bg); position: static; }
+    .brandline { font-size: 19px; }
+    .tabbar { position: static; grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: 4px; max-width: none; margin: 0; padding: 20px 14px; background: transparent; backdrop-filter: none; border-top: 0; border-right: 1px solid var(--line); }
+    .tabbar button, .tabbar a { flex-direction: row; justify-content: flex-start; gap: 12px; padding: 12px 14px; border-radius: 12px; font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); text-decoration: none; }
+    .tabbar button:hover, .tabbar a:hover { background: rgba(238,240,232,.05); color: var(--ink); }
+    .tabbar button.on { background: rgba(185,207,104,.12); color: var(--moss); }
+    .tabbar button svg { width: 20px; height: 20px; }
+    .tabbar .desk { display: flex; }
+    .tabbar .spacer { flex: 1; }
+    .tabbar .foot { font-size: 12px; color: var(--faint); padding: 12px 14px; line-height: 1.5; }
+    main { grid-column: 2; grid-row: 2; padding: 26px 32px 48px; border-right: 1px solid var(--line); }
+    .balance { padding: 22px 22px 18px; }
+    .balance > b { font-size: 68px; }
+    .week b { font-size: 28px; }
+    .stats3 b, .week b { font-size: 28px; }
+    .bigstat b { font-size: 108px; }
+    .cta-big { padding: 18px; font-size: 17px; }
+    #side { display: block !important; grid-column: 3; grid-row: 2; }
     body.detail-open #side { position: static; inset: auto; }
-    .detail { padding: 8px 28px 40px; }
+    .detail { padding: 26px 32px 48px; max-width: none; }
     .dhead .back { display: none; }
-    .lmap { height: 54vh; min-height: 380px; }
+    .lmap { height: 52vh; min-height: 380px; }
     .dgrid { grid-template-columns: 1fr 1fr; }
     .dgrid .wide { grid-column: 1 / -1; }
+    .side-empty { height: 70vh; }
     .sheet { align-items: center; }
     .sheet .panel { border-radius: 24px; }
   }
+  @media (min-width: 960px) and (max-width: 1240px) { #app { grid-template-columns: 200px minmax(0, 1fr); } #side { display: none !important; } body.detail-open #side { display: block !important; position: fixed; inset: 0; z-index: 8; } .dhead .back { display: inline-flex; } main { border-right: 0; } }
   .hidden { display: none !important; }
   .notrans * { transition: none !important; animation: none !important; }
   html.shot #app { display: flex !important; max-width: 390px !important; }
@@ -400,6 +418,11 @@
     <button data-v="home" class="on"><svg viewBox="0 0 24 24"><path d="M4 18 9 9l4 6 3-4 4 7"/></svg>Run</button>
     <button data-v="claim"><svg viewBox="0 0 24 24"><path d="M12 3v18M7 8h7a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h8"/></svg>Claim</button>
     <button data-v="portfolio"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>Portfolio</button>
+    <button class="desk" id="nav-settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button>
+    <a class="desk" href="../treasury.html"><svg viewBox="0 0 24 24"><path d="M3 10h18M5 10V20h14V10M12 3 2 8h20z"/></svg>Treasury</a>
+    <a class="desk" href="../"><svg viewBox="0 0 24 24"><path d="M3 12 12 4l9 8M6 10v10h12V10"/></svg>Site</a>
+    <span class="spacer"></span>
+    <span class="foot">Runs, proofs and claims stay on this device. Claims are paid from the on-chain treasury.</span>
   </nav>
 
   <!-- sheets -->
@@ -451,14 +474,14 @@
   function show(v) {
     cur = v;
     views.forEach(k => $('v-' + k).classList.toggle('on', k === v));
-    document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+    document.querySelectorAll('.tabbar button[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === v));
     $('tabbar').classList.toggle('hide', v === 'run' || v === 'verify');
     window.scrollTo(0, 0);
     document.body.classList.remove('detail-open');
     if (v === 'home') renderHome(); else if (v === 'claim') renderClaim(); else if (v === 'portfolio') renderPortfolio();
     if (isWide() && !dRun && !R.active) { const last = S.runs[S.runs.length - 1]; if (last) renderDetail(last); }
   }
-  document.querySelectorAll('.tabbar button').forEach(b => b.addEventListener('click', () => show(b.dataset.v)));
+  document.querySelectorAll('.tabbar button[data-v]').forEach(b => b.addEventListener('click', () => show(b.dataset.v)));
 
   // ---------- sheet ----------
   const sheet = $('sheet'), panel = $('panel');
@@ -1052,6 +1075,7 @@
     $('s-reset').onclick = () => { openSheet('<h3>Erase everything?</h3><p class="sub">All runs, proofs and claims on this phone are deleted. Claims already sent are still paid. This cannot be undone.</p><div class="row2"><button class="cta-big ghost" id="s-back">Keep</button><button class="cta-big danger" id="s-yes">Erase</button></div>'); $('s-back').onclick = closeSheet; $('s-yes').onclick = () => { localStorage.removeItem(KEY); location.reload(); }; };
   }
   $('walletchip').addEventListener('click', openSettings);
+  $('nav-settings').addEventListener('click', openSettings);
   async function exportBackup() {
     const json = JSON.stringify(Object.assign({ app: 'sweat-to-stock', v: APP_VERSION, exported: new Date().toISOString() }, S), null, 1);
     saveFile('sweat-to-stock-backup-' + new Date().toISOString().slice(0, 10) + '.json', json, 'application/json');
@@ -1060,6 +1084,10 @@
   // ---------- boot ----------
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('../sw.js').then(r => r.update()).catch(() => {});
   renderHome(); syncPayouts(false); flushPending();
+  if (views.includes(q.get('v'))) show(q.get('v'));   // ?v=claim opens a tab directly (tests, links)
+  if (q.get('run')) openRun(q.get('run'));           // ?run=<id> opens a run's detail
+  addEventListener('resize', () => { if (dmap) dmap.invalidateSize(); liveMaps.forEach(m => m.map.invalidateSize()); });
+  if (isWide() && S.runs.length && !q.get('shot')) renderDetail(S.runs[S.runs.length - 1]);
   // ---- shot mode (video / screenshots) ----
   // ?shot=home|run|verify|claim|detail|portfolio  &t=<s>  &zoom=3  (+ &km=, &road=, &tap=, &speed= for run)
   // The page freezes the real app at time t; window.__shotSet(t) moves it to another time without reloading.
