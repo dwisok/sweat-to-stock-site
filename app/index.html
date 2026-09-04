@@ -1070,9 +1070,20 @@
     let rng = 7; const rnd = () => { rng = (rng * 1103515245 + 12345) % 2147483648; return rng / 2147483648; };
     S.wallet = '0x7a3fE2b19c04d5A6f8e7C3b2a1D0e9F8c7B6c21e'; S.stock = 'AAPLx';
     renderWallet();
-    const synth = (km, sec, seed) => { // deterministic synthetic 1 Hz track
-      let lat = 45.9235 + seed * 0.004, lon = 6.8695, head = seed, pts = []; const v = km * 1000 / sec;
-      for (let t = 0; t <= sec; t++) { head += Math.sin(t / 60 + seed) * 0.03 + Math.cos(t / 23) * 0.02; const vv = v * (1 + Math.sin(t / 90) * 0.15); lat += Math.cos(head) * vv / 111320; lon += Math.sin(head) * vv / (111320 * Math.cos(lat * Math.PI / 180)); pts.push([t, +lat.toFixed(6), +lon.toFixed(6), 5 + Math.round(rnd() * 5), Math.round((1200 + Math.sin(t / 300 + seed) * 60 + t / 40) * 10) / 10]); }
+    // A real street route (shot-route.json, from a routing engine) sampled at running speed: the demo track follows real roads.
+    let ROUTE = null, pendingT = null;
+    const routeAt = (() => { let cum = null; return d => {
+      if (!cum) { cum = [0]; for (let i = 1; i < ROUTE.length; i++) cum.push(cum[i - 1] + hav({ lat: ROUTE[i - 1][0], lon: ROUTE[i - 1][1] }, { lat: ROUTE[i][0], lon: ROUTE[i][1] })); }
+      const total = cum[cum.length - 1]; d = d % total;
+      let i = 1; while (i < cum.length - 1 && cum[i] < d) i++;
+      const u = (d - cum[i - 1]) / Math.max(1e-6, cum[i] - cum[i - 1]);
+      return { lat: ROUTE[i - 1][0] + (ROUTE[i][0] - ROUTE[i - 1][0]) * u, lon: ROUTE[i - 1][1] + (ROUTE[i][1] - ROUTE[i - 1][1]) * u };
+    }; })();
+    const jit = () => (rnd() - .5) * 2.2e-5;                   // ~1 m of GPS noise
+    const synth = (km, sec, seed) => { // 1 Hz track along the real route, pace varies gently
+      const v = km * 1000 / sec; let d = seed * 900, pts = [];
+      let drift = 0;
+      for (let t = 0; t <= sec; t++) { drift = drift * 0.97 + (rnd() - .5) * 0.05; const vv = v * (1 + 0.07 * Math.sin(t / 61 + seed) + 0.05 * Math.sin(t / 137 + 2 * seed) + 0.03 * Math.sin(t / 19) + drift); d += vv; const p = routeAt(d); const alt = 33 + 4 * Math.sin(t / 310 + seed) + 3 * Math.sin(t / 95 + 1) + 2 * Math.sin(t / 47) + rnd() * 1.2; pts.push([t, +(p.lat + jit()).toFixed(6), +(p.lon + jit()).toFixed(6), 4 + Math.round(rnd() * 5), Math.round(alt * 10) / 10]); }
       return pts;
     };
     const seed = () => {
@@ -1097,15 +1108,15 @@
       }
       const N = Math.floor(t * speed);
       while (st.n < N) {
-        const n = ++st.n; st.t += 1000; st.head += (rnd() - 0.5) * 0.25 + Math.sin(n / 90) * 0.04;
-        const v = 2.7 + Math.sin(n / 40) * 0.3;
-        st.lat += Math.cos(st.head) * v / 111320; st.lon += Math.sin(st.head) * v / (111320 * Math.cos(st.lat * Math.PI / 180));
-        onFix({ timestamp: st.t, coords: { latitude: st.lat + (rnd() - .5) * 2e-5, longitude: st.lon + (rnd() - .5) * 2e-5, accuracy: 5 + rnd() * 6, altitude: 1200 + Math.sin(n / 200) * 40 } });
+        const n = ++st.n; st.t += 1000;
+        st.drift = (st.drift || 0) * 0.97 + (rnd() - .5) * 0.05; const v = 2.75 * (1 + 0.07 * Math.sin(n / 61) + 0.05 * Math.sin(n / 137) + 0.03 * Math.sin(n / 19) + st.drift); st.d = (st.d || 0) + v;
+        const p = routeAt(st.d);
+        onFix({ timestamp: st.t, coords: { latitude: p.lat + jit(), longitude: p.lon + jit(), accuracy: 4 + rnd() * 5, altitude: 33 + 4 * Math.sin(n / 310) + 3 * Math.sin(n / 95 + 1) + 2 * Math.sin(n / 47) + rnd() * 1.2 } });
         R.steps += rnd() < 0.85 ? 3 : 2;
       }
       R.simN = st.n; updateRunUI();
       $('r-cad').textContent = st.n > 5 ? String(Math.round(R.steps / Math.max(1, R.movingS / 60))) : '–';
-      if (liveMaps.length && st.n && !st.view) { st.view = true; liveMaps.forEach(m => m.map.setView([45.9265, 6.8735], 15, { animate: false })); }
+      if (liveMaps.length && st.n && !st.view) { st.view = true; const c = routeAt(800); liveMaps.forEach(m => m.map.setView([c.lat, c.lon], 15, { animate: false })); }
     }
     function shotRender(t) {
       if (shot === 'verify') {
@@ -1133,8 +1144,8 @@
       else if (shot === 'detail') { if (!st.started) { st.started = true; seed(); show('home'); openRun(S.runs[S.runs.length - 1].id); setTimeout(() => { if (dmap && dPts) { dmap.invalidateSize(); dmap.fitBounds(L.latLngBounds(dPts.map(p => [p.lat, p.lon])), { padding: [24, 24] }); } }, 400); } const side = $('side'); side.scrollTop = t < 1.2 ? 0 : Math.round(ease((t - 1.2) / 3.2) * 760); }
       else if (shot === 'run') shotRun(t);
     }
-    window.__shotSet = shotRender;
-    shotRender(parseFloat(q.get('t') || '0'));
+    window.__shotSet = t => { if (ROUTE) shotRender(t); else pendingT = t; };
+    window.__shotReady = fetch('shot-route.json').then(r => r.json()).then(j => { ROUTE = j.pts; shotRender(pendingT != null ? pendingT : parseFloat(q.get('t') || '0')); });
   }
 })();
 </script>
