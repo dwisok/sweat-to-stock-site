@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>Sweat-to-Stock</title>
+<meta name="description" content="Run, prove it, claim stock tokens. Sweat in. Stock out.">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta name="theme-color" content="#0c110f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sweat-to-Stock">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+  :root {
+    --bg: #0c110f; --bg-2: #121a16; --bg-3: #1a241e;
+    --ink: #eef0e8; --muted: rgba(238,240,232,.62); --faint: rgba(238,240,232,.38); --line: rgba(238,240,232,.12);
+    --moss: #b9cf68; --moss-deep: #8ea343; --haze: #cfdde8; --sun: #f2e6c4; --bad: #e08a7a;
+    --display: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
+    --body: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.45; -webkit-font-smoothing: antialiased; overscroll-behavior: none; -webkit-user-select: none; user-select: none; }
+  input, textarea { -webkit-user-select: text; user-select: text; }
+  a { color: inherit; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  ::selection { background: var(--moss); color: #0c110f; }
+
+  #app { min-height: 100%; display: flex; flex-direction: column; max-width: 520px; margin: 0 auto; }
+  .top { position: sticky; top: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center; padding: calc(var(--sat) + 14px) 20px 12px; background: linear-gradient(var(--bg) 70%, transparent); }
+  .brandline { font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: .06em; font-size: 17px; }
+  .chip { font-size: 12px; font-weight: 600; color: var(--muted); background: rgba(238,240,232,.08); border-radius: 999px; padding: 7px 11px; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+  .chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+  .chip.ok { color: var(--moss); background: rgba(185,207,104,.12); }
+  .chip.ok i { background: var(--moss); }
+  .chip.bad { color: var(--bad); background: rgba(224,138,122,.12); }
+  .chip.bad i { background: var(--bad); }
+
+  main { flex: 1; display: flex; flex-direction: column; padding: 0 20px calc(var(--sab) + 96px); }
+  .view { display: none; flex: 1; flex-direction: column; animation: fade .25s ease; }
+  .view.on { display: flex; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+
+  .lbl { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .balance { background: linear-gradient(160deg, rgba(185,207,104,.16), rgba(185,207,104,.04)); border: 1px solid rgba(185,207,104,.25); border-radius: 20px; padding: 18px 18px 16px; }
+  .balance .lbl { display: block; margin-bottom: 4px; }
+  .balance > b { display: block; font-family: var(--display); font-weight: 800; font-size: 60px; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .balance .claimable { display: flex; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(185,207,104,.2); font-size: 13px; color: var(--muted); }
+  .balance .claimable b { color: var(--moss); font-weight: 600; }
+  .week { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+  .week div, .stats3 div { background: rgba(238,240,232,.05); border-radius: 14px; padding: 12px 14px; }
+  .week b, .stats3 b { display: block; font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .week span, .stats3 span { font-size: 11px; color: var(--faint); letter-spacing: .08em; text-transform: uppercase; }
+  .cta-big { display: block; width: 100%; margin-top: 6px; text-align: center; padding: 18px; border-radius: 999px; background: var(--moss); color: #0c110f; font-weight: 700; font-size: 17px; transition: transform .15s, background .15s; }
+  .cta-big:active { transform: scale(.98); }
+  .cta-big.pulse { animation: ctapulse 2.2s ease-in-out infinite; }
+  .cta-big[disabled] { opacity: .5; }
+  .cta-big.ghost { background: rgba(238,240,232,.08); color: var(--ink); }
+  .cta-big.danger { background: rgba(224,138,122,.15); color: var(--bad); }
+  @keyframes ctapulse { 50% { box-shadow: 0 0 0 12px rgba(185,207,104,0); } 0%, 100% { box-shadow: 0 0 0 0 rgba(185,207,104,.35); } }
+  .btn { display: inline-block; padding: 12px 18px; border-radius: 999px; background: rgba(238,240,232,.08); font-weight: 600; font-size: 14px; }
+  .btn.primary { background: var(--moss); color: #0c110f; }
+  .btn.small { padding: 8px 12px; font-size: 13px; }
+  .btn:active { opacity: .8; }
+
+  .card { background: var(--bg-2); border: 1px solid var(--line); border-radius: 18px; padding: 16px; margin-top: 14px; }
+  .card h4 { margin: 0 0 8px; font-family: var(--display); font-weight: 700; text-transform: uppercase; font-size: 18px; letter-spacing: .02em; }
+  .card p { margin: 0; color: var(--muted); font-size: 14px; }
+  .card p + p { margin-top: 8px; }
+  .card p b { color: var(--ink); font-weight: 600; }
+  .steps3 { display: grid; gap: 10px; margin-top: 10px; }
+  .steps3 div { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: baseline; font-size: 14px; color: var(--muted); }
+  .steps3 b { font-family: var(--display); font-weight: 800; font-size: 24px; color: var(--moss); line-height: 1; }
+  .steps3 span b { font-family: var(--body); font-size: 14px; color: var(--ink); font-weight: 600; }
+
+  .sechead { display: flex; justify-content: space-between; align-items: baseline; margin: 22px 0 6px; }
+  .sechead .lbl { }
+  .sechead a, .sechead button { font-size: 13px; color: var(--moss); text-decoration: none; font-weight: 600; }
+  .list { border-top: 1px solid var(--line); }
+  .lrow { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--line); width: 100%; text-align: left; }
+  .lrow .d { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); line-height: 1.2; }
+  .lrow .t { font-size: 15px; }
+  .lrow .t small { display: block; font-size: 12px; color: var(--faint); }
+  .lrow .v { font-weight: 600; color: var(--moss); font-variant-numeric: tabular-nums; text-align: right; }
+  .lrow .v small { display: block; font-size: 11px; color: var(--faint); font-weight: 500; }
+  .lrow .v.dim { color: var(--faint); }
+  .empty { padding: 26px 0; text-align: center; color: var(--faint); font-size: 14px; }
+
+  /* live run */
+  .run-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .live { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--moss); display: flex; align-items: center; gap: 6px; }
+  .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--moss); box-shadow: 0 0 0 3px rgba(185,207,104,.2); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(185,207,104,0) } }
+  .bigstat { display: flex; align-items: baseline; gap: 8px; }
+  .bigstat b { font-family: var(--display); font-weight: 800; font-size: 96px; line-height: .9; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .bigstat span { color: var(--muted); font-size: 18px; }
+  .stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 18px 0 14px; }
+  .map { flex: 1; min-height: 200px; border-radius: 18px; background: #0a0f0c; border: 1px solid var(--line); overflow: hidden; position: relative; }
+  .map svg { width: 100%; height: 100%; display: block; }
+  .map .grid { stroke: rgba(238,240,232,.06); stroke-width: 1; fill: none; }
+  .map .route { fill: none; stroke: var(--moss); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 6px rgba(185,207,104,.5)); vector-effect: non-scaling-stroke; }
+  .map .dot { fill: #fff; stroke: var(--moss); stroke-width: 3; vector-effect: non-scaling-stroke; }
+  .maptag { position: absolute; left: 12px; bottom: 10px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+  .maptag i { font-style: normal; color: var(--ink); }
+  .mapmsg { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 20px; color: var(--muted); font-size: 14px; }
+  .run-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .run-actions .cta-big { margin: 0; }
+  .note { margin-top: 12px; text-align: center; font-size: 12px; color: var(--faint); }
+
+  /* verification */
+  .ring { position: relative; width: 170px; height: 170px; margin: 10px auto 18px; }
+  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring .bg { fill: none; stroke: rgba(238,240,232,.08); stroke-width: 9; }
+  .ring .fg { fill: none; stroke: var(--moss); stroke-width: 9; stroke-linecap: round; stroke-dasharray: 327; stroke-dashoffset: 327; transition: stroke-dashoffset 1.2s cubic-bezier(.2,.7,.2,1); }
+  .ringtxt { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .ringtxt b { font-family: var(--display); font-weight: 800; font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ringtxt span { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); }
+  .checks-app { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .checks-app li { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; column-gap: 10px; background: rgba(238,240,232,.05); border-radius: 14px; padding: 11px 14px; opacity: .45; transition: opacity .3s, background .3s; }
+  .checks-app li span { font-size: 14px; font-weight: 600; }
+  .checks-app li em { font-style: normal; font-size: 12px; color: var(--faint); grid-column: 1; }
+  .checks-app li i { grid-row: 1 / span 2; grid-column: 2; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid rgba(238,240,232,.25); align-self: center; position: relative; display: grid; place-items: center; font-style: normal; font-size: 11px; font-weight: 700; color: #0c110f; }
+  .checks-app li.on { opacity: 1; }
+  .checks-app li.ok { background: rgba(185,207,104,.08); }
+  .checks-app li.ok i { background: var(--moss); border-color: var(--moss); }
+  .checks-app li.ok i::after { content: ""; position: absolute; left: 8px; top: 4px; width: 5px; height: 10px; border: solid #0c110f; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  .checks-app li.part i { background: var(--sun); border-color: var(--sun); }
+  .checks-app li.fail { background: rgba(224,138,122,.08); }
+  .checks-app li.fail i { background: var(--bad); border-color: var(--bad); }
+  .formula { margin-top: 14px; display: flex; justify-content: space-between; align-items: baseline; background: rgba(238,240,232,.05); border-radius: 14px; padding: 12px 14px; }
+  .formula span { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .formula span i { font-style: normal; color: var(--ink); }
+  .formula b { font-family: var(--display); font-weight: 800; font-size: 28px; color: var(--moss); font-variant-numeric: tabular-nums; }
+
+  /* claim */
+  .claimhead { text-align: center; padding: 6px 0 16px; }
+  .claimhead > span { display: block; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); }
+  .claimhead b { display: block; font-family: var(--display); font-weight: 800; font-size: 64px; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .claimhead b small { font-size: 22px; color: var(--muted); font-weight: 700; }
+  .claimhead em { font-style: normal; font-size: 13px; color: var(--muted); }
+  .field { margin-top: 12px; }
+  .field label { display: block; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin-bottom: 6px; }
+  .field input, .field textarea { width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(238,240,232,.18); background: rgba(238,240,232,.05); color: var(--ink); font: inherit; font-size: 15px; outline: none; }
+  .field input:focus { border-color: var(--moss); }
+  .field input.bad { border-color: var(--bad); }
+  .field .hint { font-size: 12px; color: var(--faint); margin-top: 6px; }
+  .pick { display: grid; gap: 6px; margin-top: 8px; }
+  .opt { display: grid; grid-template-columns: 70px 1fr auto; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 14px; background: rgba(238,240,232,.05); border: 1px solid transparent; font-size: 14px; text-align: left; width: 100%; }
+  .opt.on { border-color: var(--moss); background: rgba(185,207,104,.1); }
+  .opt .tk { font-weight: 700; }
+  .opt .nm { color: var(--muted); }
+  .opt .px { font-variant-numeric: tabular-nums; color: var(--faint); font-size: 12px; }
+  .youget { display: flex; justify-content: space-between; align-items: baseline; margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
+  .youget b { font-family: var(--display); font-weight: 800; font-size: 26px; color: var(--ink); }
+  .status { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; border-radius: 999px; padding: 4px 9px; background: rgba(238,240,232,.08); color: var(--muted); }
+  .status.paid { background: rgba(185,207,104,.15); color: var(--moss); }
+  .status.sent { background: rgba(242,230,196,.12); color: var(--sun); }
+
+  /* portfolio chart */
+  .chart { min-height: 120px; height: 140px; border-radius: 16px; background: #0a0f0c; border: 1px solid var(--line); padding: 10px; margin-top: 12px; }
+  .chart svg { width: 100%; height: 100%; display: block; }
+  .chart .line { fill: none; stroke: var(--moss); stroke-width: 2.5; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  .chart .area { fill: url(#g); }
+  .sub { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
+  .sub b { color: var(--ink); font-weight: 600; }
+
+  /* tab bar */
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; display: grid; grid-template-columns: repeat(3, 1fr); max-width: 520px; margin: 0 auto; padding: 10px 20px calc(var(--sab) + 12px); background: rgba(12,17,15,.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--line); }
+  .tabbar button { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); padding: 6px 0; }
+  .tabbar button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .tabbar button.on { color: var(--moss); }
+  .tabbar.hide { display: none; }
+
+  /* sheet / modal */
+  .sheet { position: fixed; inset: 0; z-index: 20; background: rgba(6,10,8,.7); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: none; align-items: flex-end; justify-content: center; }
+  .sheet.on { display: flex; }
+  .sheet .panel { width: 100%; max-width: 520px; max-height: 88vh; overflow: auto; background: var(--bg-2); border-radius: 24px 24px 0 0; padding: 18px 20px calc(var(--sab) + 24px); animation: up .3s cubic-bezier(.2,.7,.2,1); }
+  @keyframes up { from { transform: translateY(40px); opacity: 0 } to { transform: none; opacity: 1 } }
+  .panel .grab { width: 40px; height: 4px; border-radius: 2px; background: rgba(238,240,232,.2); margin: 0 auto 14px; }
+  .panel h3 { margin: 0 0 4px; font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 28px; line-height: 1; }
+  .panel .sub { margin-bottom: 8px; }
+  .toast { position: fixed; left: 50%; bottom: calc(var(--sab) + 100px); transform: translateX(-50%) translateY(20px); background: var(--ink); color: #0c110f; font-size: 14px; font-weight: 600; padding: 12px 18px; border-radius: 999px; opacity: 0; transition: opacity .25s, transform .25s; z-index: 30; pointer-events: none; max-width: 90vw; text-align: center; }
+  .toast.on { opacity: 1; transform: translateX(-50%); }
+  .kv { display: flex; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .kv span { color: var(--muted); }
+  .kv b { font-weight: 600; text-align: right; word-break: break-all; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .row2 .cta-big { margin: 0; padding: 14px; font-size: 15px; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: rgba(238,240,232,.08); padding: 2px 6px; border-radius: 6px; }
+  .hidden { display: none !important; }
+  .mini { height: 150px; border-radius: 14px; background: #0a0f0c; border: 1px solid var(--line); overflow: hidden; margin-top: 12px; }
+  .mini svg { width: 100%; height: 100%; display: block; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <span class="brandline">Sweat-to-Stock</span>
+    <button class="chip" id="walletchip"><i></i><span>Set wallet</span></button>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <section class="view on" id="v-home">
+      <div class="balance">
+        <span class="lbl">ROAD balance</span>
+        <b id="h-bal">0</b>
+        <div class="claimable"><span>Claimable now</span><b id="h-clm">0 ROAD</b></div>
+      </div>
+      <div class="week"><div><b id="h-runs">0</b><span>runs · 7 d</span></div><div><b id="h-km">0.0</b><span>km · 7 d</span></div><div><b id="h-road">0</b><span>ROAD · 7 d</span></div></div>
+      <button class="cta-big pulse" id="btn-start">Start run</button>
+      <p class="note" id="h-note">GPS and motion sensors are used only during a run. Nothing leaves your phone until you claim.</p>
+
+      <div class="card" id="h-howto">
+        <h4>How it works</h4>
+        <div class="steps3">
+          <div><b>01</b><span><b>Run</b> with the phone on you. The app records the GPS track, your cadence and elevation.</span></div>
+          <div><b>02</b><span><b>Verified</b> at the end: four checks give a quality score from 0 to 1. Reward = km × <span id="h-rpk">100</span> × quality.</span></div>
+          <div><b>03</b><span><b>Claim</b> ROAD into a Stock Token, delivered to your wallet within <span id="h-window">48 h</span>.</span></div>
+        </div>
+      </div>
+
+      <div class="sechead"><span class="lbl">Recent runs</span><button id="h-all">All runs</button></div>
+      <div class="list" id="h-list"></div>
+    </section>
+
+    <!-- LIVE RUN -->
+    <section class="view" id="v-run">
+      <div class="run-top"><span class="lbl" id="r-title">Run</span><span class="live"><i></i>Proof of run</span></div>
+      <div class="bigstat"><b id="r-km">0.00</b><span>km</span></div>
+      <div class="stats3"><div><b id="r-pace">–:––</b><span>/km</span></div><div><b id="r-time">00:00</b><span>time</span></div><div><b id="r-cad">–</b><span>spm</span></div></div>
+      <div class="map">
+        <svg id="r-map" viewBox="0 0 260 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <path class="grid" d="M0 50H260M0 100H260M0 150H260M65 0V200M130 0V200M195 0V200"/>
+          <polyline class="route" id="r-route" points=""/>
+          <circle class="dot" id="r-dot" r="5" cx="-10" cy="-10"/>
+        </svg>
+        <div class="mapmsg" id="r-msg">Waiting for GPS…</div>
+        <span class="maptag">GPS <i id="r-acc">–</i> · <i id="r-pts">0</i> fixes · <i id="r-elev">+0 m</i></span>
+      </div>
+      <div class="run-actions">
+        <button class="cta-big ghost" id="btn-pause">Pause</button>
+        <button class="cta-big" id="btn-stop">Finish</button>
+      </div>
+      <p class="note" id="r-note">Keep the screen on and the app in front. The proof is recorded only while the app is open.</p>
+    </section>
+
+    <!-- VERIFICATION -->
+    <section class="view" id="v-verify">
+      <div class="run-top"><span class="lbl" id="y-title">Run · 0.0 km</span><span class="chip" id="y-state"><i></i><span>Verifying</span></span></div>
+      <div class="ring">
+        <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="bg" cx="60" cy="60" r="52"/><circle id="y-ringfg" class="fg" cx="60" cy="60" r="52"/></svg>
+        <div class="ringtxt"><b id="y-pct">0%</b><span>quality</span></div>
+      </div>
+      <ul class="checks-app" id="y-checks">
+        <li data-k="gps"><span>GPS track</span><em>Continuous, no teleport</em><i></i></li>
+        <li data-k="pace"><span>Pace</span><em>Human running pace</em><i></i></li>
+        <li data-k="cad"><span>Cadence</span><em>Steps per minute</em><i></i></li>
+        <li data-k="hist"><span>History</span><em>Consistent with your runs</em><i></i></li>
+      </ul>
+      <div class="formula"><span><i id="y-km">0.0</i> km × <i id="y-rpk">100</i> × <i id="y-q">0.00</i></span><b>+<span id="y-road">0</span> ROAD</b></div>
+      <button class="cta-big" id="btn-done" style="margin-top:16px">Done</button>
+    </section>
+
+    <!-- CLAIM -->
+    <section class="view" id="v-claim">
+      <div class="claimhead"><span>Claimable</span><b><span id="c-road">0</span> <small>ROAD</small></b><em>≈ <span id="c-usd">0.00</span> USDG</em></div>
+      <div class="field">
+        <label for="c-wallet">Wallet address</label>
+        <input id="c-wallet" placeholder="0x…" autocomplete="off" spellcheck="false" inputmode="text">
+        <div class="hint">Your Robinhood Wallet, or any EVM address. Stock Tokens are sent there on Robinhood Chain. Double-check it: a transfer cannot be undone.</div>
+      </div>
+      <div class="field"><label>Claim into</label><div class="pick" id="c-pick"></div></div>
+      <div class="youget"><span>You get</span><b id="c-get">≈ 0.00 USDG of AAPLx</b></div>
+      <button class="cta-big" id="btn-claim">Claim</button>
+      <p class="note" id="c-note"></p>
+
+      <div class="sechead"><span class="lbl">Your claims</span><button id="c-refresh">Refresh status</button></div>
+      <div class="list" id="c-list"></div>
+    </section>
+
+    <!-- PORTFOLIO -->
+    <section class="view" id="v-portfolio">
+      <div class="run-top"><span class="lbl">Portfolio</span><span class="chip ok"><i></i><span>Proof ledger</span></span></div>
+      <div class="bigstat"><b id="p-usd">0.00</b><span>USDG claimed</span></div>
+      <p class="sub"><b id="p-road">0</b> ROAD earned · <b id="p-km">0.0</b> km verified · <b id="p-n">0</b> runs</p>
+      <div class="chart">
+        <svg id="p-chart" viewBox="0 0 260 120" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#b9cf68" stop-opacity=".35"/><stop offset="1" stop-color="#b9cf68" stop-opacity="0"/></linearGradient></defs>
+          <path class="area" id="p-area" d=""/><path class="line" id="p-line" d=""/>
+        </svg>
+      </div>
+      <div class="sechead"><span class="lbl">Stock Tokens received</span></div>
+      <div class="list" id="p-hold"></div>
+      <div class="sechead"><span class="lbl">All runs</span><button id="p-export">Export backup</button></div>
+      <div class="list" id="p-list"></div>
+    </section>
+  </main>
+
+  <nav class="tabbar" id="tabbar">
+    <button data-v="home" class="on"><svg viewBox="0 0 24 24"><path d="M4 18 9 9l4 6 3-4 4 7"/></svg>Run</button>
+    <button data-v="claim"><svg viewBox="0 0 24 24"><path d="M12 3v18M7 8h7a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h8"/></svg>Claim</button>
+    <button data-v="portfolio"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>Portfolio</button>
+  </nav>
+
+  <!-- sheets -->
+  <div class="sheet" id="sheet"><div class="panel" id="panel"></div></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const CFG = Object.assign({
+    CLAIM_ENDPOINT: '', CLAIM_EMAIL: '', ROAD_USD: 0.01, MIN_CLAIM_ROAD: 500, PAYOUT_WINDOW: '48 h', EXPLORER_TX: '',
+    STOCKS: [{ tk: 'AAPLx', name: 'Apple' }], ROAD_PER_KM: 100, MIN_RUN_KM: 0.3, MIN_RUN_MOVING_S: 120, MAX_ACCURACY_M: 40,
+    MAX_SPEED_MS: 8, PACE_MIN_S: 165, PACE_MAX_S: 720, CADENCE_MIN: 130, CADENCE_MAX: 220, HISTORY_RUNS: 3
+  }, window.S2S_CONFIG || {});
+  const APP_VERSION = '1.0';
+  const $ = id => document.getElementById(id);
+  const q = new URLSearchParams(location.search);
+
+  // ---------- store ----------
+  const KEY = 's2s.v1';
+  let S = { wallet: '', runs: [], claims: [], stock: CFG.STOCKS[0].tk, created: Date.now() };
+  try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch (e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('Storage full: export a backup'); } };
+
+  // ---------- helpers ----------
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const ramp = (x, a, b, c, d) => x <= a || x >= d ? 0 : x < b ? (x - a) / (b - a) : x <= c ? 1 : 1 - (x - c) / (d - c);
+  const fmtInt = n => Math.round(n).toLocaleString('en-GB');
+  const fmtTime = s => { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), r = s % 60; return (h ? h + ':' : '') + (h && m < 10 ? '0' : '') + m + ':' + (r < 10 ? '0' : '') + r; };
+  const fmtPace = spk => !isFinite(spk) || spk <= 0 || spk > 3600 ? '–:––' : Math.floor(spk / 60) + ':' + (Math.round(spk % 60) < 10 ? '0' : '') + Math.round(spk % 60);
+  const fmtDate = t => { const d = new Date(t); return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }); };
+  const fmtDay = t => { const d = new Date(t); return d.toLocaleDateString('en-GB', { weekday: 'short' }); };
+  const usd = road => (road * CFG.ROAD_USD).toFixed(2);
+  const hex = n => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('');
+  const shortAddr = a => a ? a.slice(0, 6) + '…' + a.slice(-4) : '';
+  const validAddr = a => /^0x[0-9a-fA-F]{40}$/.test(a);
+  const hav = (a, b) => { const R = 6371000, r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLon = (b.lon - a.lon) * r, s = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLon / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(s)); };
+  async function sha(str) { try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('').slice(0, 16); } catch (e) { return 'n/a'; } }
+  let toastT; function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
+  const unclaimed = () => S.runs.filter(r => !r.claim && !r.sim && r.road > 0);
+  const claimable = () => unclaimed().reduce((a, r) => a + r.road, 0);
+  const balance = () => S.runs.filter(r => !r.sim).reduce((a, r) => a + r.road, 0) - S.claims.reduce((a, c) => a + c.road, 0);
+  const stockOf = tk => CFG.STOCKS.find(s => s.tk === tk) || CFG.STOCKS[0];
+
+  // ---------- router ----------
+  const views = ['home', 'run', 'verify', 'claim', 'portfolio'];
+  let cur = 'home';
+  function show(v) {
+    cur = v;
+    views.forEach(k => $('v-' + k).classList.toggle('on', k === v));
+    document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+    $('tabbar').classList.toggle('hide', v === 'run' || v === 'verify');
+    window.scrollTo(0, 0);
+    if (v === 'home') renderHome(); else if (v === 'claim') renderClaim(); else if (v === 'portfolio') renderPortfolio();
+  }
+  document.querySelectorAll('.tabbar button').forEach(b => b.addEventListener('click', () => show(b.dataset.v)));
+
+  // ---------- sheet ----------
+  const sheet = $('sheet'), panel = $('panel');
+  function openSheet(html) { panel.innerHTML = '<div class="grab"></div>' + html; sheet.classList.add('on'); }
+  function closeSheet() { sheet.classList.remove('on'); }
+  sheet.addEventListener('click', e => { if (e.target === sheet) closeSheet(); });
+
+  // ---------- home ----------
+  function renderHome() {
+    const now = Date.now(), wk = S.runs.filter(r => !r.sim && now - r.start < 7 * 864e5);
+    $('h-bal').textContent = fmtInt(balance());
+    $('h-clm').textContent = fmtInt(claimable()) + ' ROAD';
+    $('h-runs').textContent = wk.length;
+    $('h-km').textContent = wk.reduce((a, r) => a + r.km, 0).toFixed(1);
+    $('h-road').textContent = fmtInt(wk.reduce((a, r) => a + r.road, 0));
+    $('h-rpk').textContent = CFG.ROAD_PER_KM; $('h-window').textContent = CFG.PAYOUT_WINDOW;
+    $('h-howto').classList.toggle('hidden', S.runs.length > 2);
+    renderRunList($('h-list'), S.runs.slice(-4).reverse());
+    renderWallet();
+  }
+  function renderWallet() {
+    const c = $('walletchip');
+    c.className = 'chip' + (S.wallet ? ' ok' : '');
+    c.querySelector('span').textContent = S.wallet ? shortAddr(S.wallet) : 'Set wallet';
+  }
+  function renderRunList(el, runs) {
+    if (!runs.length) { el.innerHTML = '<div class="empty">No run yet. Press Start run, and go.</div>'; return; }
+    el.innerHTML = runs.map(r => `<button class="lrow" data-id="${r.id}"><span class="d">${fmtDay(r.start)}<br>${fmtDate(r.start)}</span><span class="t">${r.km.toFixed(2)} km · ${fmtTime(r.durS)}<small>${fmtPace(r.movingS / r.km)} /km · quality ${r.quality.toFixed(2)}${r.sim ? ' · simulation' : r.claim ? ' · claimed' : ''}</small></span><span class="v${r.road ? '' : ' dim'}">+${fmtInt(r.road)}<small>ROAD</small></span></button>`).join('');
+    el.querySelectorAll('.lrow').forEach(b => b.addEventListener('click', () => openRun(b.dataset.id)));
+  }
+  $('h-all').addEventListener('click', () => show('portfolio'));
+
+  // ---------- run engine ----------
+  const R = { active: false, paused: false };
+  let watchId = null, timerId = null, wakeLock = null, motionOn = false;
+  function resetRun() {
+    Object.assign(R, { active: true, paused: false, start: Date.now(), pausedS: 0, pauseAt: 0, pts: [], km: 0, movingS: 0, ref: null, lastFixT: 0, segs: 0, teleports: 0, gapS: 0, maxGap: 0, ignored: 0,
+      steps: 0, stepTimes: [], motion: false, elevGain: 0, lastAlt: null, acc: null, recent: [], bbox: null, sim: false });
+  }
+  const jitter = acc => Math.max(1, acc * 0.15);
+  function onFix(pos) {
+    if (!R.active || R.paused) return;
+    const c = pos.coords, t = pos.timestamp || Date.now();
+    const p = { t, lat: c.latitude, lon: c.longitude, acc: c.accuracy, alt: c.altitude };
+    R.acc = c.accuracy;
+    if (c.accuracy > CFG.MAX_ACCURACY_M) { R.ignored++; updateRunUI(); return; }
+    if (R.lastFixT) { const g = (t - R.lastFixT) / 1000; if (g > 30) { R.gapS += g; R.maxGap = Math.max(R.maxGap, g); } }
+    R.lastFixT = t;
+    if (!R.ref) { R.ref = p; R.pts.push(p); }
+    else {
+      const d = hav(R.ref, p), dt = (t - R.ref.t) / 1000;
+      if (d >= jitter(c.accuracy) && dt > 0) {
+        const v = d / dt; R.segs++;
+        if (v > CFG.MAX_SPEED_MS) { R.teleports++; R.ref = p; }
+        else if (v < 0.6) { R.ref = p; }                       // drifting while standing still: move the reference, count nothing
+        else { R.km += d / 1000; R.movingS += dt; R.ref = p; R.pts.push(p); R.recent.push({ t, d, dt }); }
+      }
+    }
+    if (typeof c.altitude === 'number' && !isNaN(c.altitude)) {
+      if (R.lastAlt === null) R.lastAlt = c.altitude;
+      else if (c.altitude - R.lastAlt > 4) { R.elevGain += c.altitude - R.lastAlt; R.lastAlt = c.altitude; }
+      else if (c.altitude < R.lastAlt - 4) R.lastAlt = c.altitude;
+    }
+    updateRunUI();
+  }
+  function onGeoErr(err) {
+    $('r-msg').textContent = err.code === 1 ? 'Location denied. Allow location for this site in your phone settings, then start again.' : 'GPS signal lost… move to open sky.';
+    $('r-msg').classList.remove('hidden');
+  }
+  // cadence from the accelerometer: peaks of the vertical bounce, one per step
+  let gLp = 9.81, hpPrev = 0, lastStep = 0;
+  function onMotion(e) {
+    if (!R.active || R.paused) return;
+    const a = e.accelerationIncludingGravity; if (!a || a.x === null) return;
+    R.motion = true;
+    const m = Math.hypot(a.x, a.y, a.z);
+    gLp += (m - gLp) * 0.05;                                   // gravity + slow drift
+    const hp = m - gLp, now = performance.now();
+    if (hpPrev <= 2.2 && hp > 2.2 && now - lastStep > 240) { lastStep = now; R.steps++; R.stepTimes.push(now); }
+    hpPrev = hp;
+  }
+  async function askMotion() {
+    try {
+      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        const r = await DeviceMotionEvent.requestPermission(); if (r !== 'granted') return;
+      }
+      if (!motionOn) { addEventListener('devicemotion', onMotion); motionOn = true; }
+    } catch (e) {}
+  }
+  async function keepAwake() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && R.active) keepAwake(); });
+
+  function currentPace() {
+    const now = Date.now(); R.recent = R.recent.filter(s => now - s.t < 30000);
+    const d = R.recent.reduce((a, s) => a + s.d, 0), t = R.recent.reduce((a, s) => a + s.dt, 0);
+    return d > 20 ? t / (d / 1000) : Infinity;
+  }
+  function cadenceNow() { const now = performance.now(); R.stepTimes = R.stepTimes.filter(t => now - t < 10000); return R.stepTimes.length * 6; }
+  function elapsed() { if (R.sim) return R.simN || 0; return (Date.now() - R.start) / 1000 - R.pausedS - (R.paused ? (Date.now() - R.pauseAt) / 1000 : 0); }
+  function updateRunUI() {
+    $('r-km').textContent = R.km.toFixed(2);
+    $('r-pace').textContent = fmtPace(currentPace());
+    $('r-time').textContent = fmtTime(elapsed());
+    $('r-cad').textContent = R.motion ? cadenceNow() : '–';
+    $('r-acc').textContent = R.acc == null ? '–' : '±' + Math.round(R.acc) + ' m';
+    $('r-pts').textContent = R.pts.length;
+    $('r-elev').textContent = '+' + Math.round(R.elevGain) + ' m';
+    if (R.pts.length) { $('r-msg').classList.add('hidden'); drawTrack($('r-map'), $('r-route'), $('r-dot'), R.pts); }
+    else if (R.acc != null) $('r-msg').textContent = 'GPS ±' + Math.round(R.acc) + ' m · waiting for a good fix…';
+  }
+  function project(pts) {
+    const lat0 = pts[0].lat * Math.PI / 180, k = Math.cos(lat0) * 111320;
+    return pts.map(p => [(p.lon - pts[0].lon) * k, -(p.lat - pts[0].lat) * 111320]);
+  }
+  function drawTrack(svg, route, dot, pts) {
+    if (pts.length < 2) { if (dot) { dot.setAttribute('cx', 130); dot.setAttribute('cy', 100); } return; }
+    const xy = project(pts);
+    let minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
+    xy.forEach(([x, y]) => { minx = Math.min(minx, x); maxx = Math.max(maxx, x); miny = Math.min(miny, y); maxy = Math.max(maxy, y); });
+    const w = Math.max(maxx - minx, 40), h = Math.max(maxy - miny, 40), s = Math.min(220 / w, 160 / h);
+    const ox = 130 - (minx + maxx) / 2 * s, oy = 100 - (miny + maxy) / 2 * s;
+    route.setAttribute('points', xy.map(([x, y]) => (x * s + ox).toFixed(1) + ',' + (y * s + oy).toFixed(1)).join(' '));
+    if (dot) { const [x, y] = xy[xy.length - 1]; dot.setAttribute('cx', x * s + ox); dot.setAttribute('cy', y * s + oy); }
+  }
+
+  async function startRun(sim, speed) {
+    if (!navigator.geolocation && !sim) { toast('This browser has no location support'); return; }
+    resetRun(); R.sim = !!sim;
+    $('r-title').textContent = sim ? 'Simulated run' : (new Date().getHours() < 12 ? 'Morning run' : new Date().getHours() < 18 ? 'Afternoon run' : 'Evening run');
+    $('r-route').setAttribute('points', ''); $('r-msg').textContent = 'Waiting for GPS…'; $('r-msg').classList.remove('hidden');
+    $('btn-pause').textContent = 'Pause';
+    show('run'); updateRunUI();
+    await askMotion(); keepAwake();
+    if (sim) simulate(speed || 20); else watchId = navigator.geolocation.watchPosition(onFix, onGeoErr, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+    timerId = setInterval(() => { if (R.active) { $('r-time').textContent = fmtTime(elapsed()); $('r-pace').textContent = fmtPace(currentPace()); if (R.motion) $('r-cad').textContent = cadenceNow(); } }, 1000);
+  }
+  function stopWatching() {
+    if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    clearInterval(timerId); timerId = null;
+    if (simId) { clearInterval(simId); simId = null; }
+    if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+  }
+  $('btn-pause').addEventListener('click', () => {
+    if (!R.active) return;
+    R.paused = !R.paused;
+    if (R.paused) { R.pauseAt = Date.now(); $('btn-pause').textContent = 'Resume'; }
+    else { R.pausedS += (Date.now() - R.pauseAt) / 1000; R.ref = null; R.lastFixT = 0; $('btn-pause').textContent = 'Pause'; }
+  });
+  $('btn-stop').addEventListener('click', () => {
+    if (!R.active) return;
+    if (R.paused) { R.pausedS += (Date.now() - R.pauseAt) / 1000; R.paused = false; }
+    const km = R.km;
+    if (km < CFG.MIN_RUN_KM || R.movingS < CFG.MIN_RUN_MOVING_S) {
+      openSheet(`<h3>Finish this run?</h3><p class="sub">Only ${km.toFixed(2)} km and ${fmtTime(R.movingS)} moving so far. Runs under ${CFG.MIN_RUN_KM} km or ${Math.round(CFG.MIN_RUN_MOVING_S / 60)} minutes are discarded and earn nothing.</p><div class="row2"><button class="cta-big ghost" id="s-back">Keep running</button><button class="cta-big danger" id="s-discard">Discard</button></div>`);
+      $('s-back').onclick = closeSheet; $('s-discard').onclick = () => { closeSheet(); R.active = false; stopWatching(); show('home'); toast('Run discarded'); };
+      return;
+    }
+    R.active = false; stopWatching(); finishRun();
+  });
+
+  // ---------- verification ----------
+  function verify(run, history) {
+    const out = {};
+    const teleRatio = run.segs ? run.teleports / run.segs : 0, gapRatio = run.durS ? run.gapS / run.durS : 0;
+    const gps = clamp(1 - teleRatio * 10 - Math.max(0, gapRatio - 0.1) * 2, 0, 1);
+    out.gps = { s: +gps.toFixed(2), note: run.teleports ? `${run.teleports} implausible jump${run.teleports > 1 ? 's' : ''} in ${run.segs} segments` : run.maxGap > 60 ? `Signal gaps: ${fmtTime(run.gapS)} in total` : `${run.pts} fixes, no teleport` };
+    const pace = run.movingS / run.km;
+    const ps = ramp(pace, CFG.PACE_MIN_S * 0.8, CFG.PACE_MIN_S, CFG.PACE_MAX_S, CFG.PACE_MAX_S * 1.5);
+    out.pace = { s: +ps.toFixed(2), note: fmtPace(pace) + ' /km' + (ps >= 1 ? ', human' : pace < CFG.PACE_MIN_S ? ', too fast for legs' : ', too slow for a run') };
+    if (run.motion) {
+      const cad = run.movingS ? run.steps / (run.movingS / 60) : 0;
+      const cs = ramp(cad, 90, CFG.CADENCE_MIN, CFG.CADENCE_MAX, 260);
+      out.cad = { s: +cs.toFixed(2), note: Math.round(cad) + ' spm' + (cs >= 1 ? ', human' : cad < CFG.CADENCE_MIN ? ', too few steps for the distance' : ', implausible') };
+    } else out.cad = { s: 0.9, note: 'No motion sensor on this phone: -10 %' };
+    const prev = history.filter(r => !r.sim && r.road > 0).slice(-10).map(r => r.movingS / r.km);
+    if (prev.length < CFG.HISTORY_RUNS) out.hist = { s: 1, note: `Baseline run ${prev.length + 1} of ${CFG.HISTORY_RUNS}` };
+    else { const med = prev.sort((a, b) => a - b)[Math.floor(prev.length / 2)], ratio = pace / med; const hs = ramp(ratio, 0.5, 0.7, 1.4, 2.2); out.hist = { s: +hs.toFixed(2), note: hs >= 1 ? 'In line with your usual pace' : ratio < 1 ? 'Much faster than your usual pace' : 'Much slower than your usual pace' }; }
+    const quality = +(out.gps.s * out.pace.s * out.cad.s * out.hist.s).toFixed(2);
+    return { checks: out, quality };
+  }
+  function finishRun() {
+    const durS = elapsed();
+    const run = { id: hex(4), start: R.start, end: Date.now(), durS: Math.round(durS), movingS: Math.round(R.movingS), km: +R.km.toFixed(3), pts: R.pts.length, segs: R.segs, teleports: R.teleports, gapS: Math.round(R.gapS), maxGap: Math.round(R.maxGap), steps: R.steps, motion: R.motion, elev: Math.round(R.elevGain), sim: R.sim, claim: null };
+    const v = verify(run, S.runs);
+    run.checks = v.checks; run.quality = v.quality;
+    run.road = run.sim ? 0 : Math.round(run.km * CFG.ROAD_PER_KM * run.quality);
+    // keep a light track for the map + proof (max 400 points)
+    const step = Math.max(1, Math.ceil(R.pts.length / 400));
+    run.track = R.pts.filter((p, i) => i % step === 0 || i === R.pts.length - 1).map(p => [Math.round((p.t - R.start) / 1000), +p.lat.toFixed(5), +p.lon.toFixed(5), Math.round(p.acc)]);
+    S.runs.push(run); save();
+    showVerify(run);
+  }
+  function showVerify(run) {
+    show('verify');
+    $('y-title').textContent = (run.sim ? 'Simulation' : 'Run') + ' · ' + run.km.toFixed(2) + ' km';
+    const st = $('y-state'); st.className = 'chip'; st.querySelector('span').textContent = 'Verifying';
+    $('y-ringfg').style.strokeDashoffset = 327; $('y-pct').textContent = '0%';
+    $('y-km').textContent = run.km.toFixed(2); $('y-rpk').textContent = CFG.ROAD_PER_KM; $('y-q').textContent = '0.00'; $('y-road').textContent = '0';
+    const lis = [...$('y-checks').querySelectorAll('li')];
+    lis.forEach(li => { li.className = ''; li.querySelector('em').textContent = ''; });
+    lis.forEach((li, k) => setTimeout(() => {
+      const c = run.checks[li.dataset.k];
+      li.className = 'on ' + (c.s >= 0.99 ? 'ok' : c.s > 0.3 ? 'part' : 'fail');
+      li.querySelector('em').textContent = c.note;
+      li.querySelector('i').textContent = c.s >= 0.99 ? '' : Math.round(c.s * 100) + '';
+    }, 350 + k * 450));
+    setTimeout(() => {
+      $('y-ringfg').style.strokeDashoffset = 327 * (1 - run.quality);
+      const t0 = performance.now(); const anim = now => { const u = Math.min(1, (now - t0) / 1200); const e = 1 - Math.pow(1 - u, 3); $('y-pct').textContent = Math.round(run.quality * 100 * e) + '%'; $('y-q').textContent = (run.quality * e).toFixed(2); $('y-road').textContent = fmtInt(run.road * e); if (u < 1) requestAnimationFrame(anim); }; requestAnimationFrame(anim);
+      st.className = 'chip ' + (run.quality > 0 ? 'ok' : 'bad'); st.querySelector('span').textContent = run.quality > 0 ? 'Verified ✓' : 'Rejected';
+    }, 350 + 4 * 450 + 200);
+  }
+  $('btn-done').addEventListener('click', () => show('home'));
+
+  // ---------- simulation (?sim=1) : a synthetic run at 20× speed, never claimable ----------
+  let simId = null;
+  function simulate(speed) {
+    let t = Date.now(), lat = 45.9 + Math.random() * 0.01, lon = 6.86, head = 0.4;
+    R.simN = 0;
+    $('r-note').textContent = 'Simulation: synthetic GPS at ' + speed + '× speed. Earns 0 ROAD.';
+    simId = setInterval(() => {
+      for (let i = 0; i < speed && R.active && !R.paused; i++) {
+        const n = ++R.simN; t += 1000; head += (Math.random() - 0.5) * 0.25 + Math.sin(n / 90) * 0.04;
+        const v = 2.7 + Math.sin(n / 40) * 0.3;
+        lat += Math.cos(head) * v / 111320; lon += Math.sin(head) * v / (111320 * Math.cos(lat * Math.PI / 180));
+        onFix({ timestamp: t, coords: { latitude: lat + (Math.random() - .5) * 2e-5, longitude: lon + (Math.random() - .5) * 2e-5, accuracy: 5 + Math.random() * 6, altitude: 1200 + Math.sin(n / 200) * 40 } });
+        R.steps += Math.random() < 0.85 ? 3 : 2; R.motion = true;
+        if (i === 0) R.stepTimes.push(performance.now() + Math.random() * 300);
+      }
+    }, 1000);
+  }
+  if (q.get('sim') === '1') {
+    const b = document.createElement('button'); b.className = 'cta-big ghost'; b.style.marginTop = '10px'; b.textContent = 'Simulate a run (0 ROAD)'; $('btn-start').after(b);
+    b.addEventListener('click', () => startRun(true, 20));
+    // ?sim=1&auto=N : self-test, N synthetic seconds then finish (screenshots)
+    const auto = parseInt(q.get('auto'));
+    if (auto > 0) setTimeout(() => { startRun(true, 400); const w = setInterval(() => { if (R.simN >= auto) { clearInterval(w); $('btn-stop').click(); } }, 200); }, 300);
+  }
+
+  $('btn-start').addEventListener('click', () => startRun(false));
+
+  // ---------- run details ----------
+  function openRun(id) {
+    const r = S.runs.find(x => x.id === id); if (!r) return;
+    const c = r.checks || {};
+    const row = (k, label) => c[k] ? `<div class="kv"><span>${label}</span><b>${Math.round(c[k].s * 100)}% · ${c[k].note}</b></div>` : '';
+    openSheet(`<h3>${r.km.toFixed(2)} km · ${fmtTime(r.durS)}</h3><p class="sub">${new Date(r.start).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}${r.sim ? ' · simulation' : ''}</p>
+      <div class="mini"><svg viewBox="0 0 260 200" preserveAspectRatio="xMidYMid meet"><polyline class="route" id="m-route" points="" style="fill:none;stroke:#b9cf68;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke"/></svg></div>
+      <div class="kv"><span>Moving pace</span><b>${fmtPace(r.movingS / r.km)} /km</b></div>
+      <div class="kv"><span>Elevation gain</span><b>+${r.elev || 0} m</b></div>
+      <div class="kv"><span>GPS fixes</span><b>${r.pts}</b></div>
+      ${row('gps', 'GPS track')}${row('pace', 'Pace')}${row('cad', 'Cadence')}${row('hist', 'History')}
+      <div class="kv"><span>Reward</span><b>${r.km.toFixed(2)} × ${CFG.ROAD_PER_KM} × ${r.quality.toFixed(2)} = ${fmtInt(r.road)} ROAD</b></div>
+      <div class="kv"><span>Status</span><b>${r.sim ? 'Simulation' : r.claim ? 'Claimed in #' + r.claim : 'Claimable'}</b></div>
+      <div class="row2"><button class="cta-big ghost" id="m-proof">Copy proof</button><button class="cta-big danger" id="m-del">Delete</button></div>`);
+    if (r.track && r.track.length > 1) drawTrack(null, $('m-route'), null, r.track.map(p => ({ lat: p[1], lon: p[2] })));
+    $('m-proof').onclick = () => copy(JSON.stringify({ app: 'sweat-to-stock', v: APP_VERSION, run: r }), 'Proof copied');
+    $('m-del').onclick = () => { if (r.claim) { toast('This run is part of a claim'); return; } S.runs = S.runs.filter(x => x.id !== id); save(); closeSheet(); show(cur); toast('Run deleted'); };
+  }
+  async function copy(text, msg) { try { await navigator.clipboard.writeText(text); toast(msg || 'Copied'); } catch (e) { openSheet('<h3>Copy this</h3><div class="field"><textarea rows="8" readonly>' + text.replace(/</g, '&lt;') + '</textarea></div>'); } }
+
+  // ---------- claim ----------
+  function renderClaim() {
+    const road = claimable();
+    $('c-road').textContent = fmtInt(road); $('c-usd').textContent = usd(road);
+    $('c-wallet').value = S.wallet;
+    $('c-pick').innerHTML = CFG.STOCKS.map(s => `<button class="opt${s.tk === S.stock ? ' on' : ''}" data-tk="${s.tk}"><span class="tk">${s.tk}</span><span class="nm">${s.name}</span><span class="px">market price at payout</span></button>`).join('');
+    $('c-pick').querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => { S.stock = b.dataset.tk; save(); renderClaim(); }));
+    $('c-get').textContent = '≈ ' + usd(road) + ' USDG of ' + S.stock;
+    const ok = road >= CFG.MIN_CLAIM_ROAD;
+    $('btn-claim').disabled = !ok;
+    $('btn-claim').textContent = ok ? 'Claim ' + fmtInt(road) + ' ROAD' : 'Claim (min ' + fmtInt(CFG.MIN_CLAIM_ROAD) + ' ROAD)';
+    $('c-note').textContent = ok ? `Your claim is reviewed against the proof of each run and paid within ${CFG.PAYOUT_WINDOW}. 1 ROAD = ${CFG.ROAD_USD} USDG.` : `You need ${fmtInt(CFG.MIN_CLAIM_ROAD - road)} more ROAD. That is about ${(Math.max(0, CFG.MIN_CLAIM_ROAD - road) / CFG.ROAD_PER_KM).toFixed(1)} clean km.`;
+    renderClaimList($('c-list'));
+  }
+  function renderClaimList(el) {
+    const cl = S.claims.slice().reverse();
+    if (!cl.length) { el.innerHTML = '<div class="empty">No claim yet.</div>'; return; }
+    el.innerHTML = cl.map(c => `<button class="lrow" data-id="${c.id}"><span class="d">${fmtDate(c.ts)}<br>#${c.id.slice(0, 4)}</span><span class="t">${fmtInt(c.road)} ROAD → ${c.stock}<small>${c.paid ? 'Paid · ' + (c.paid.qty || '') : 'Submitted · payout within ' + CFG.PAYOUT_WINDOW}</small></span><span class="v"><span class="status ${c.paid ? 'paid' : 'sent'}">${c.paid ? 'Paid' : 'Sent'}</span></span></button>`).join('');
+    el.querySelectorAll('.lrow').forEach(b => b.addEventListener('click', () => openClaim(b.dataset.id)));
+  }
+  $('c-wallet').addEventListener('input', e => { const v = e.target.value.trim(); e.target.classList.toggle('bad', v && !validAddr(v)); if (validAddr(v)) { S.wallet = v; save(); renderWallet(); } });
+  $('c-wallet').addEventListener('change', e => { const v = e.target.value.trim(); if (!v) { S.wallet = ''; save(); renderWallet(); } });
+  $('c-refresh').addEventListener('click', () => syncPayouts(true));
+
+  async function claimText(c) {
+    const runs = c.runs.map(r => `- ${new Date(r.start).toISOString().slice(0, 16).replace('T', ' ')} · ${r.km.toFixed(2)} km · ${fmtTime(r.movingS)} moving · q ${r.quality.toFixed(2)} · ${r.road} ROAD`).join('\n');
+    return `Sweat-to-Stock claim #${c.id}\nWallet: ${c.wallet}\nAmount: ${c.road} ROAD = ${usd(c.road)} USDG\nStock: ${c.stock} (${stockOf(c.stock).name})\nRuns (${c.runs.length}, ${c.km.toFixed(2)} km):\n${runs}\nProof hash: ${c.hash}\nApp v${APP_VERSION}`;
+  }
+  $('btn-claim').addEventListener('click', async () => {
+    const w = $('c-wallet').value.trim();
+    if (!validAddr(w)) { $('c-wallet').classList.add('bad'); $('c-wallet').focus(); toast('Enter a valid 0x… wallet address'); return; }
+    const runs = unclaimed(); const road = runs.reduce((a, r) => a + r.road, 0);
+    if (road < CFG.MIN_CLAIM_ROAD) return;
+    S.wallet = w;
+    const c = { id: hex(4), ts: Date.now(), wallet: w, road, usd: +usd(road), stock: S.stock, km: +runs.reduce((a, r) => a + r.km, 0).toFixed(2), runIds: runs.map(r => r.id), paid: null, sent: null };
+    c.hash = await sha(JSON.stringify(runs.map(r => [r.id, r.start, r.km, r.movingS, r.quality, r.track])));
+    openSheet(`<h3>Confirm claim</h3><p class="sub">Read it once more, then send.</p>
+      <div class="kv"><span>Amount</span><b>${fmtInt(road)} ROAD ≈ ${usd(road)} USDG</b></div>
+      <div class="kv"><span>Into</span><b>${c.stock} · ${stockOf(c.stock).name}</b></div>
+      <div class="kv"><span>To wallet</span><b>${w}</b></div>
+      <div class="kv"><span>Runs</span><b>${runs.length} · ${c.km} km</b></div>
+      <p class="sub">The tokens are bought at market price and sent to this wallet within ${CFG.PAYOUT_WINDOW}. The claim is checked against each run's proof; a run that fails review is refunded as ROAD.</p>
+      <div class="row2"><button class="cta-big ghost" id="s-back">Back</button><button class="cta-big" id="s-send">Send claim</button></div>`);
+    $('s-back').onclick = closeSheet;
+    $('s-send').onclick = async () => {
+      runs.forEach(r => r.claim = c.id);
+      c.runs = runs.map(r => ({ id: r.id, start: r.start, km: r.km, movingS: r.movingS, quality: r.quality, road: r.road, pts: r.pts, checks: r.checks, track: r.track }));
+      const text = await claimText(c);
+      let delivered = false;
+      if (CFG.CLAIM_ENDPOINT) {
+        try { const r = await fetch(CFG.CLAIM_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ claim: c, text }) }); delivered = r.ok; } catch (e) {}
+      }
+      c.sent = delivered ? 'endpoint' : 'mail';
+      const stored = Object.assign({}, c); stored.runs = c.runs.map(r => ({ id: r.id, km: r.km, road: r.road }));
+      S.claims.push(stored); save();
+      closeSheet(); renderClaim();
+      if (!delivered) {
+        const mail = 'mailto:' + CFG.CLAIM_EMAIL + '?subject=' + encodeURIComponent('Sweat-to-Stock claim #' + c.id + ' · ' + road + ' ROAD → ' + c.stock) + '&body=' + encodeURIComponent(text);
+        openSheet(`<h3>Send the claim</h3><p class="sub">Your claim #${c.id} is saved. Send it by e-mail so we can pay it: the mail is pre-filled, just press send.</p>
+          <a class="cta-big" style="text-decoration:none" href="${mail}" id="s-mail">Open e-mail</a>
+          <div class="row2"><button class="cta-big ghost" id="s-copy">Copy claim text</button><button class="cta-big ghost" id="s-close">Done</button></div>
+          <p class="note">No e-mail app? Copy the claim and send it to ${CFG.CLAIM_EMAIL}.</p>`);
+        $('s-copy').onclick = () => copy(text, 'Claim copied'); $('s-close').onclick = closeSheet;
+      } else toast('Claim sent');
+    };
+  });
+  async function openClaim(id) {
+    const c = S.claims.find(x => x.id === id); if (!c) return;
+    const runsFull = S.runs.filter(r => r.claim === c.id);
+    const text = await claimText(Object.assign({}, c, { runs: runsFull.length ? runsFull : c.runs.map(r => Object.assign({ start: c.ts, movingS: 0, quality: 0 }, r)) }));
+    const tx = c.paid && c.paid.tx ? (CFG.EXPLORER_TX ? `<a href="${CFG.EXPLORER_TX}${c.paid.tx}" target="_blank" rel="noopener">${shortAddr(c.paid.tx)} ↗</a>` : `<code>${c.paid.tx}</code>`) : '';
+    openSheet(`<h3>Claim #${c.id}</h3><p class="sub">${new Date(c.ts).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+      <div class="kv"><span>Status</span><b>${c.paid ? 'Paid' + (c.paid.paid ? ' · ' + c.paid.paid : '') : 'Submitted · payout within ' + CFG.PAYOUT_WINDOW}</b></div>
+      <div class="kv"><span>Amount</span><b>${fmtInt(c.road)} ROAD ≈ ${usd(c.road)} USDG</b></div>
+      <div class="kv"><span>Into</span><b>${c.stock}${c.paid && c.paid.qty ? ' · ' + c.paid.qty : ''}</b></div>
+      <div class="kv"><span>Wallet</span><b>${c.wallet}</b></div>
+      ${tx ? `<div class="kv"><span>Transaction</span><b>${tx}</b></div>` : ''}
+      <div class="kv"><span>Runs</span><b>${c.runs.length} · ${c.km} km</b></div>
+      <div class="row2"><button class="cta-big ghost" id="s-copy">Copy claim</button>${c.paid ? '' : `<a class="cta-big ghost" style="text-decoration:none" href="mailto:${CFG.CLAIM_EMAIL}?subject=${encodeURIComponent('Sweat-to-Stock claim #' + c.id)}&body=${encodeURIComponent(text)}">Re-send e-mail</a>`}</div>`);
+    $('s-copy').onclick = () => copy(text, 'Claim copied');
+  }
+  async function syncPayouts(manual) {
+    try {
+      const r = await fetch('payouts.json?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) throw 0;
+      const j = await r.json(); let n = 0;
+      S.claims.forEach(c => { if (!c.paid && j.claims && j.claims[c.id]) { c.paid = j.claims[c.id]; n++; } });
+      if (n) { save(); toast(n + ' claim' + (n > 1 ? 's' : '') + ' paid'); }
+      else if (manual) toast('Up to date');
+      if (cur === 'claim') renderClaimList($('c-list')); if (cur === 'portfolio') renderPortfolio();
+    } catch (e) { if (manual) toast('Offline: try again later'); }
+  }
+
+  // ---------- portfolio ----------
+  function renderPortfolio() {
+    const runs = S.runs.filter(r => !r.sim);
+    $('p-usd').textContent = S.claims.filter(c => c.paid).reduce((a, c) => a + c.usd, 0).toFixed(2);
+    $('p-road').textContent = fmtInt(runs.reduce((a, r) => a + r.road, 0));
+    $('p-km').textContent = runs.filter(r => r.road > 0).reduce((a, r) => a + r.km, 0).toFixed(1);
+    $('p-n').textContent = runs.length;
+    // cumulative ROAD chart
+    let acc = 0; const pts = runs.map(r => (acc += r.road));
+    if (pts.length > 1) {
+      const max = Math.max(1, acc), xs = pts.map((v, i) => [i / (pts.length - 1) * 260, 110 - v / max * 100]);
+      const d = xs.map(([x, y], i) => (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1)).join(' ');
+      $('p-line').setAttribute('d', d); $('p-area').setAttribute('d', d + ' L260 120 L0 120 Z');
+    } else { $('p-line').setAttribute('d', ''); $('p-area').setAttribute('d', ''); }
+    // holdings: paid claims grouped by stock
+    const by = {}; S.claims.forEach(c => { const k = c.stock; by[k] = by[k] || { usd: 0, n: 0, paid: 0 }; by[k].usd += c.usd; by[k].n++; if (c.paid) by[k].paid += c.usd; });
+    const keys = Object.keys(by);
+    $('p-hold').innerHTML = keys.length ? keys.map(k => `<div class="lrow"><span class="d">${k}</span><span class="t">${stockOf(k).name}<small>${by[k].n} claim${by[k].n > 1 ? 's' : ''}${by[k].paid < by[k].usd ? ' · ' + (by[k].usd - by[k].paid).toFixed(2) + ' USDG pending' : ''}</small></span><span class="v">${by[k].paid.toFixed(2)}<small>USDG paid</small></span></div>`).join('') : '<div class="empty">Claims you have been paid show up here, with their transaction.</div>';
+    renderRunList($('p-list'), S.runs.slice().reverse());
+  }
+  $('p-export').addEventListener('click', exportBackup);
+
+  // ---------- settings ----------
+  let installEvt = null;
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+  const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function openSettings() {
+    const inst = standalone() ? '<p class="sub">Installed on this phone ✓</p>'
+      : installEvt ? '<button class="cta-big" id="s-install" style="margin-top:8px">Add to home screen</button>'
+      : isIOS() ? '<p class="sub">Add it to your home screen: tap <b>Share</b> (the square with an arrow), then <b>Add to Home Screen</b>. It opens full screen and keeps your runs.</p>'
+      : '<p class="sub">Add it to your home screen from the browser menu (⋮) → <b>Add to Home screen</b> or <b>Install app</b>.</p>';
+    openSheet(`<h3>Settings</h3>
+      <div class="field"><label for="s-wallet">Wallet address</label><input id="s-wallet" placeholder="0x…" value="${S.wallet}" autocomplete="off" spellcheck="false"><div class="hint">Where your Stock Tokens are sent.</div></div>
+      <div class="sechead"><span class="lbl">On this phone</span></div>${inst}
+      <div class="sechead"><span class="lbl">Your data</span></div>
+      <p class="sub">Runs, proofs and claims live on this phone only. Export a backup before changing phone.</p>
+      <div class="row2"><button class="cta-big ghost" id="s-export">Export backup</button><button class="cta-big ghost" id="s-import">Import backup</button></div>
+      <input type="file" id="s-file" accept="application/json,.json" class="hidden">
+      <div class="sechead"><span class="lbl">The rules</span></div>
+      <div class="kv"><span>Reward</span><b>km × ${CFG.ROAD_PER_KM} × quality</b></div>
+      <div class="kv"><span>Rate</span><b>1 ROAD = ${CFG.ROAD_USD} USDG</b></div>
+      <div class="kv"><span>Minimum claim</span><b>${fmtInt(CFG.MIN_CLAIM_ROAD)} ROAD</b></div>
+      <div class="kv"><span>Payout</span><b>within ${CFG.PAYOUT_WINDOW}</b></div>
+      <div class="kv"><span>Contact</span><b>${CFG.CLAIM_EMAIL}</b></div>
+      <div class="row2"><a class="cta-big ghost" style="text-decoration:none" href="../#faq">FAQ</a><button class="cta-big danger" id="s-reset">Erase everything</button></div>
+      <p class="note">Sweat-to-Stock app v${APP_VERSION}</p>`);
+    $('s-wallet').addEventListener('input', e => { const v = e.target.value.trim(); e.target.classList.toggle('bad', v && !validAddr(v)); if (validAddr(v) || !v) { S.wallet = v; save(); renderWallet(); } });
+    if ($('s-install')) $('s-install').onclick = async () => { installEvt.prompt(); const r = await installEvt.userChoice; if (r.outcome === 'accepted') { installEvt = null; closeSheet(); toast('Added to your home screen'); } };
+    $('s-export').onclick = exportBackup;
+    $('s-import').onclick = () => $('s-file').click();
+    $('s-file').onchange = e => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { try { const j = JSON.parse(rd.result); if (!j.runs) throw 0; const ids = new Set(S.runs.map(r => r.id)); j.runs.forEach(r => { if (!ids.has(r.id)) S.runs.push(r); }); const cids = new Set(S.claims.map(c => c.id)); (j.claims || []).forEach(c => { if (!cids.has(c.id)) S.claims.push(c); }); if (j.wallet && !S.wallet) S.wallet = j.wallet; S.runs.sort((a, b) => a.start - b.start); save(); closeSheet(); show('home'); toast('Backup imported'); } catch (err) { toast('Not a Sweat-to-Stock backup'); } }; rd.readAsText(f); };
+    $('s-reset').onclick = () => { openSheet('<h3>Erase everything?</h3><p class="sub">All runs, proofs and claims on this phone are deleted. Claims already sent are still paid. This cannot be undone.</p><div class="row2"><button class="cta-big ghost" id="s-back">Keep</button><button class="cta-big danger" id="s-yes">Erase</button></div>'); $('s-back').onclick = closeSheet; $('s-yes').onclick = () => { localStorage.removeItem(KEY); location.reload(); }; };
+  }
+  $('walletchip').addEventListener('click', openSettings);
+  async function exportBackup() {
+    const json = JSON.stringify(Object.assign({ app: 'sweat-to-stock', v: APP_VERSION, exported: new Date().toISOString() }, S), null, 1);
+    const name = 'sweat-to-stock-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    try {
+      const file = new File([json], name, { type: 'application/json' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Sweat-to-Stock backup' }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    toast('Backup downloaded');
+  }
+
+  // ---------- boot ----------
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('../sw.js').then(r => r.update()).catch(() => {});
+  renderHome(); syncPayouts(false);
+  if (views.includes(q.get('v'))) show(q.get('v'));   // ?v=claim opens a tab directly (tests, links)
+  addEventListener('beforeunload', e => { if (R.active) { e.preventDefault(); e.returnValue = ''; } });
+})();
+</script>
+</body>
+</html>

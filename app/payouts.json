@@ -1,0 +1,4 @@
+{
+  "_readme": "Operator file. When a claim has been paid, add its id here; the app shows the claim as paid with the tx hash. Example: \"a3f9c2d1\": { \"tx\": \"0x…\", \"paid\": \"2026-09-10\", \"qty\": \"0.0412 AAPLx\" }",
+  "claims": {}
+}

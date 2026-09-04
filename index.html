@@ -10,6 +10,9 @@
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#0c110f">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sweat-to-Stock">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -392,11 +395,11 @@
   .cta { background: var(--bg-2); border-top: 1px solid var(--line); }
   .cta .inner { display: grid; grid-template-columns: 1.1fr .9fr; gap: clamp(28px, 6vw, 96px); align-items: center; }
   .cta h3.big { font-size: clamp(40px, 5.6vw, 84px); }
-  form.join { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
-  form.join input { flex: 1 1 260px; padding: 16px 20px; border-radius: 999px; border: 1px solid rgba(238,240,232,.22); background: rgba(238,240,232,.05); color: var(--ink); font: inherit; outline: none; transition: border-color .15s; }
-  form.join input:focus { border-color: var(--moss); }
-  form.join input::placeholder { color: var(--faint); }
-  form.join button { border: 0; cursor: pointer; font: inherit; font-weight: 600; }
+  .install-steps { display: grid; gap: 10px; margin: 22px 0 20px; }
+  .install-steps div { display: grid; grid-template-columns: 84px 1fr; gap: 14px; align-items: baseline; padding: 14px 16px; border-radius: 14px; background: rgba(238,240,232,.05); border: 1px solid var(--line); font-size: 15px; color: var(--muted); }
+  .install-steps b { font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 20px; color: var(--moss); letter-spacing: .02em; }
+  .install-steps em { font-style: normal; color: var(--ink); font-weight: 600; }
+  .cta .actions { display: flex; gap: 12px; flex-wrap: wrap; }
   .fine { margin: 14px 0 0; font-size: 13px; color: var(--faint); }
 
   /* Footer */
@@ -433,7 +436,7 @@
 
 <nav class="nav">
   <a class="brand" href="#">Sweat-to-Stock</a>
-  <a class="cta" href="#join">Join the beta</a>
+  <a class="cta" href="app/">Open the app</a>
 </nav>
 
 <section class="scrub" id="scrub" aria-label="Intro">
@@ -458,7 +461,7 @@
       <h2>Sweat in.<br><em>Stock out.</em></h2>
       <p>Every verified kilometre earns ROAD. Claim it into stock tokens on Robinhood Chain, straight into your wallet. No points to hoard, no game to play.</p>
       <div class="actions">
-        <a class="btn primary" href="#join">Join the beta</a>
+        <a class="btn primary" href="app/">Open the app</a>
         <a class="btn ghost" href="#how">How it works</a>
       </div>
     </div>
@@ -479,7 +482,7 @@
     <div class="side">
       <p class="lede">We don't sell a dream. We count strides. Your phone records the proof, the protocol verifies it, and the reward is a formula you can check. The rest is you.</p>
       <ul class="checks">
-        <li>Stock tokens on Robinhood Chain: AAPLx, NVDAx, TSLAx and 90 more, tradable 24/7.</li>
+        <li>Stock Tokens on Robinhood Chain: AAPLx, NVDAx, TSLAx and more, tradable 24/7.</li>
         <li>In your own wallet. Swap them, hold them, use them as collateral.</li>
         <li>Only verified kilometres pay. The reward is <b>km × 100 × quality</b>, on-chain.</li>
       </ul>
@@ -496,7 +499,7 @@
         <div class="st" data-i="0"><div class="n">01</div><h4>Connect, then run</h4><p>Your Robinhood Wallet is the account. No sign-up, no broker form. Your ROAD balance and what's claimable sit on the home screen.</p></div>
         <div class="st" data-i="1"><div class="n">02</div><h4>Proof of run</h4><p>The app records the GPS track, cadence and elevation at 1 Hz. This is the evidence, not the distance on its own.</p></div>
         <div class="st" data-i="2"><div class="n">03</div><h4>Verified, then paid in ROAD</h4><p>Every kilometre passes four checks. The reward is a formula, not a promise: <b>km × 100 × quality</b>. A clean 8.4 km run is 840 ROAD.</p></div>
-        <div class="st" data-i="3"><div class="n">04</div><h4>Claim into stock tokens</h4><p>Pick a stock, press Claim, confirm in the wallet. ROAD is swapped on-chain into a Stock Token on Robinhood Chain. One transaction, 100 ms blocks, a hash you can open.</p></div>
+        <div class="st" data-i="3"><div class="n">04</div><h4>Claim into stock tokens</h4><p>Pick a stock, press Claim, confirm in the wallet. ROAD is swapped into a Stock Token on Robinhood Chain and lands in your wallet within 48 h, with a transaction hash you can open.</p></div>
         <div class="st" data-i="4"><div class="n">05</div><h4>Your portfolio, on-chain</h4><p>Stock Tokens are plain ERC-20s in your wallet: hold them, swap them on Uniswap, use them as collateral. Every claim is on the proof ledger.</p></div>
       </div>
       <div class="dots"><i></i><i></i><i></i><i></i><i></i></div>
@@ -611,8 +614,8 @@
   <div class="wrap">
     <div class="numbers">
       <div class="num"><b>100 <em>ROAD</em></b><span>per verified kilometre, times a quality score from 0 to 1. That is the whole formula.</span></div>
-      <div class="num"><b>95 <em>stocks</em></b><span>to claim into, as Stock Tokens on Robinhood Chain, tradable 24 hours a day.</span></div>
-      <div class="num"><b>100 <em>ms</em></b><span>blocks. A claim is confirmed before you have finished stretching.</span></div>
+      <div class="num"><b>10 <em>stocks</em></b><span>to claim into today, as Stock Tokens on Robinhood Chain, tradable 24 hours a day. More as we go.</span></div>
+      <div class="num"><b>48 <em>h</em></b><span>at most between your claim and the tokens in your wallet, hash included.</span></div>
     </div>
   </div>
 </section>
@@ -625,26 +628,28 @@
     <div class="faq">
       <details><summary>What do I actually receive?</summary><p>Stock Tokens on Robinhood Chain: ERC-20 tokens that track a listed stock and trade 24/7. They live in your own wallet, not in our app. To be clear, they give economic exposure to the underlying stock, not legal ownership of the shares.</p></details>
       <details><summary>How do you know I really ran?</summary><p>The app records a proof of run: GPS track at 1 Hz, cadence, elevation, and how it compares to your history. Four checks produce a quality score between 0 and 1, and the reward is km × 100 × quality. A run that fails the checks scores 0 and earns nothing.</p></details>
-      <details><summary>Does it cost anything?</summary><p>No subscription. A claim is one on-chain swap, and the protocol keeps a small fee on it. If you don't run, we don't earn. Gas on Robinhood Chain is a fraction of a cent.</p></details>
-      <details><summary>Is this live?</summary><p>Not yet. The numbers on this page are illustrative and the beta opens this autumn. Leave your e-mail below and we'll write once, when it does.</p></details>
+      <details><summary>Does it cost anything?</summary><p>No subscription, no gas to pay. A claim is swapped at market price and the protocol keeps a small fee on it. If you don't run, we don't earn.</p></details>
+      <details><summary>Is this live?</summary><p>Yes. The app runs in your browser and installs on your home screen, no App Store. Every claim is checked against the proof of run and paid within 48 h from a payout pool we top up as we go. The balances shown in the demo above are illustrative; the formula is not.</p></details>
+      <details><summary>Why not an App Store app?</summary><p>Because you don't need one. Add the page to your home screen and it opens full screen, records GPS and cadence, works offline and keeps your runs on the phone. Nothing leaves it until you claim.</p></details>
     </div>
   </div>
 </section>
 
-<!-- CTA -->
-<section class="section cta" id="join">
+<!-- Install -->
+<section class="section cta" id="install">
   <div class="wrap inner">
     <div>
-      <p class="eyebrow">Beta</p>
-      <h3 class="big">The beta opens<br>this <em>autumn</em>.</h3>
+      <p class="eyebrow">The app</p>
+      <h3 class="big">On your phone<br>in <em>ten seconds</em>.</h3>
     </div>
     <div>
-      <p class="lede">Leave your e-mail. One message when the beta opens, nothing else.</p>
-      <form class="join" onsubmit="event.preventDefault(); this.querySelector('button').textContent='Thanks, see you on the trail.';">
-        <input type="email" required placeholder="you@email.com" aria-label="E-mail">
-        <button class="btn primary" type="submit">Get in</button>
-      </form>
-      <p class="fine">No spam. No sharing. Unsubscribe in one click.</p>
+      <p class="lede">No App Store. Open the page on your phone, add it to your home screen, and it is an app: full screen, GPS, offline, your runs on your phone.</p>
+      <div class="install-steps">
+        <div><b>iPhone</b><span>Open in Safari, tap <em>Share</em>, then <em>Add to Home Screen</em>.</span></div>
+        <div><b>Android</b><span>Open in Chrome, tap the menu, then <em>Add to Home screen</em> or <em>Install app</em>.</span></div>
+      </div>
+      <div class="actions"><a class="btn primary" href="app/">Open the app</a></div>
+      <p class="fine">Free. No account. Runs, proofs and claims stay on your phone until you claim.</p>
     </div>
   </div>
 </section>
@@ -652,12 +657,13 @@
 <footer class="footer">
   <div class="wrap inner">
     <a class="brand" href="#">Sweat-to-Stock</a>
-    <nav><a href="#manifesto">Idea</a><a href="#how">How it works</a><a href="#faq">FAQ</a><a href="#join">Beta</a></nav>
+    <nav><a href="#manifesto">Idea</a><a href="#how">How it works</a><a href="#faq">FAQ</a><a href="app/">App</a></nav>
     <span>© 2026 Sweat-to-Stock</span>
   </div>
 </footer>
 
 <script>
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 (() => {
   const FRAME_COUNT = 193;              // landing/frames/f_0001.webp … f_0193.webp
   const src = i => `frames/f_${String(i + 1).padStart(4, '0')}.webp`;
