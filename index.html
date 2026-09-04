@@ -59,6 +59,14 @@
   .nav a.cta.ghost::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--moss); box-shadow: 0 0 0 4px rgba(185,207,104,.2); }
   .nav a.cta.ghost::after { content: none; }
   .nav a.cta.ghost:hover { background: rgba(12,17,15,.8); border-color: #fff; }
+  .nav a.cta .s { display: none; }
+  @media (max-width: 640px) {
+    .nav { padding: 14px 16px; }
+    .nav .brand { font-size: 17px; white-space: nowrap; }
+    .nav a.cta { padding: 9px 13px; font-size: 13px; white-space: nowrap; }
+    .nav a.cta .l { display: none; } .nav a.cta .s { display: inline; }
+    .nav .nav-actions { gap: 8px; }
+  }
   .nav a.cta:hover { background: #c9dd7c; transform: translateY(-1px); }
   .nav a.cta:hover::after { transform: translateX(3px); }
 
@@ -464,7 +472,7 @@
 
 <nav class="nav">
   <a class="brand" href="#">Sweat-to-Stock</a>
-  <div class="nav-actions"><a class="cta ghost" href="treasury.html">Vault</a><a class="cta" href="app/">Open the app</a></div>
+  <div class="nav-actions"><a class="cta ghost" href="treasury.html">Vault</a><a class="cta" href="app/"><span class="l">Open the app</span><span class="s">App</span></a></div>
 </nav>
 
 <section class="scrub" id="scrub" aria-label="Intro">
