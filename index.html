@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sweat-to-Stock</title>
+<meta name="description" content="Run, prove it, claim stock tokens on Robinhood Chain. Sweat in. Stock out.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Palette pulled from the ridge footage: dark earth, moss lit by low sun, haze-blue mountains, pale sky. */
+  :root {
+    --bg: #0c110f;
+    --bg-2: #121a16;
+    --bg-3: #1a241e;
+    --ink: #eef0e8;
+    --muted: rgba(238, 240, 232, .62);
+    --faint: rgba(238, 240, 232, .38);
+    --line: rgba(238, 240, 232, .12);
+    --moss: #b9cf68;
+    --moss-deep: #8ea343;
+    --haze: #cfdde8;
+    --sun: #f2e6c4;
+    --display: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
+    --body: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: auto; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--body); font-size: 17px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  a { color: inherit; }
+  ::selection { background: var(--moss); color: #0c110f; }
+
+  /* ---------- Nav ---------- */
+  .nav {
+    position: fixed; inset: 0 0 auto 0; z-index: 30;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px clamp(18px, 4vw, 48px);
+    mix-blend-mode: difference; color: #fff;
+  }
+  .nav .brand { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; }
+  .nav a.cta { font-size: 14px; font-weight: 600; text-decoration: none; border: 1px solid currentColor; border-radius: 999px; padding: 9px 16px; }
+
+  /* ---------- Scroll-scrubbed hero ---------- */
+  .scrub { position: relative; height: 800vh; }
+  .scrub .stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: #000; }
+  .scrub canvas { animation: breathe 14s ease-in-out infinite alternate; transform-origin: 50% 60%; }
+  @keyframes breathe { from { transform: scale(1) } to { transform: scale(1.045) } }
+  .scrub canvas, .scrub video, .scrub .poster {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .scrub video.loop { opacity: 0; transition: opacity .6s ease; }
+  .scrub video.loop.on { opacity: 1; }
+  .scrub .grain {
+    position: absolute; inset: -50%; width: 200%; height: 200%; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    animation: grain .5s steps(4) infinite;
+  }
+  @keyframes grain { 0% { transform: translate(0,0) } 25% { transform: translate(-3%,2%) } 50% { transform: translate(2%,-3%) } 75% { transform: translate(-1%,-1%) } 100% { transform: translate(3%,1%) } }
+  .scrub .vignette { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,.55) 100%),
+                linear-gradient(to bottom, rgba(0,0,0,.35), transparent 30%, transparent 65%, rgba(0,0,0,.6)); }
+  .scrub .dim { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(70% 70% at 50% 55%, rgba(6,10,8,.62), rgba(6,10,8,.32)); opacity: 0; transition: opacity .6s ease; }
+  .scrub .stage.end .dim { opacity: 1; }
+
+  .cap {
+    position: absolute; left: clamp(18px, 6vw, 96px); right: clamp(18px, 6vw, 96px);
+    opacity: 0; transform: translateY(18px); transition: opacity .45s ease, transform .45s ease; pointer-events: none;
+  }
+  .cap.on { opacity: 1; transform: none; }
+  .cap.bottom { bottom: clamp(56px, 12vh, 140px); }
+  .cap.center { top: 50%; transform: translateY(calc(-50% + 18px)); text-align: center; }
+  .cap.center.on { transform: translateY(-50%); }
+  .cap .kicker { font: 600 13px/1.3 var(--body); letter-spacing: .28em; text-transform: uppercase; color: var(--moss); margin: 0 0 14px; text-shadow: 0 1px 12px rgba(0,0,0,.8); }
+  .cap h2 { font-family: var(--display); font-weight: 800; text-transform: uppercase; line-height: .92; letter-spacing: -.01em;
+    font-size: clamp(44px, 9vw, 128px); margin: 0; text-shadow: 0 2px 30px rgba(0,0,0,.45); }
+  .cap h2 em { font-style: normal; color: var(--moss); }
+  .cap p { max-width: 34ch; color: var(--ink); opacity: .85; margin: 14px 0 0; font-size: clamp(15px, 1.4vw, 19px); }
+  .cap.center p { margin-inline: auto; }
+  .cap .actions { pointer-events: auto; display: flex; gap: 12px; justify-content: center; margin-top: 26px; flex-wrap: wrap; }
+  .btn { display: inline-block; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 999px; padding: 14px 24px; transition: transform .15s ease, background .15s ease; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn.primary { background: var(--moss); color: #0c110f; }
+  .btn.primary:hover { background: #c9dd7c; }
+  .btn.ghost { border: 1px solid rgba(255,255,255,.35); color: #fff; backdrop-filter: blur(6px); }
+
+  .hint { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted);
+    display: flex; flex-direction: column; align-items: center; gap: 8px; transition: opacity .4s; }
+  .hint span { width: 1px; height: 34px; background: linear-gradient(var(--moss), transparent); animation: drop 1.6s ease-in-out infinite; }
+  @keyframes drop { 0% { transform: scaleY(0); transform-origin: top } 50% { transform: scaleY(1); transform-origin: top } 51% { transform-origin: bottom } 100% { transform: scaleY(0); transform-origin: bottom } }
+  .hint.off { opacity: 0; }
+  .progress { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: rgba(255,255,255,.12); }
+  .progress i { display: block; height: 100%; width: 0; background: var(--moss); }
+  .loader { position: absolute; inset: 0; display: grid; place-items: center; background: #000; z-index: 5; transition: opacity .5s; }
+  .loader.off { opacity: 0; pointer-events: none; }
+  .loader b { font-family: var(--display); font-weight: 800; font-size: 14px; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); }
+  .loader i { display: block; margin-top: 10px; height: 2px; width: 160px; background: rgba(255,255,255,.12); }
+  .loader i s { display: block; height: 100%; width: 0; background: var(--moss); }
+
+  /* ---------- Below the hero ---------- */
+  .wrap { max-width: 1240px; margin: 0 auto; padding-inline: clamp(18px, 6vw, 96px); }
+  .section { padding-block: clamp(80px, 12vw, 170px); }
+  .eyebrow { font: 600 12px/1 var(--body); letter-spacing: .3em; text-transform: uppercase; color: var(--moss); margin: 0 0 22px; display: flex; align-items: center; gap: 14px; }
+  .eyebrow::before { content: ""; width: 28px; height: 1px; background: var(--moss); }
+  h3.big { font-family: var(--display); font-weight: 800; text-transform: uppercase; line-height: .92; letter-spacing: -.01em; font-size: clamp(44px, 7vw, 108px); margin: 0; }
+  h3.big em { font-style: normal; color: var(--moss); }
+  .lede { font-size: clamp(18px, 1.5vw, 22px); color: var(--muted); max-width: 52ch; margin: 0; }
+  .two { display: grid; grid-template-columns: 1.15fr .85fr; gap: clamp(28px, 6vw, 96px); align-items: end; }
+  .two .side p { margin: 0 0 18px; }
+  .checks { list-style: none; padding: 0; margin: 26px 0 0; display: grid; gap: 12px; }
+  .checks li { display: flex; gap: 14px; align-items: baseline; color: var(--ink); font-size: 16px; }
+  .checks li::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--moss); transform: translateY(-2px); box-shadow: 0 0 0 4px rgba(185,207,104,.15); }
+
+  /* Steps */
+  .steps { border-top: 1px solid var(--line); margin-top: clamp(40px, 6vw, 80px); display: grid; grid-template-columns: repeat(3, 1fr); }
+  .step { padding: 34px 28px 38px 0; border-bottom: 1px solid var(--line); position: relative; }
+  .step + .step { padding-left: 28px; border-left: 1px solid var(--line); }
+  .step .n { font-family: var(--display); font-weight: 800; font-size: 64px; line-height: 1; color: var(--moss); letter-spacing: -.02em; }
+  .step h4 { font-family: var(--display); font-weight: 700; text-transform: uppercase; font-size: 28px; letter-spacing: .01em; margin: 18px 0 10px; line-height: 1; }
+  .step p { margin: 0; color: var(--muted); font-size: 15.5px; max-width: 34ch; }
+
+  /* Ledger */
+  .ledger-wrap { background: var(--bg-2); border-block: 1px solid var(--line); }
+  .ledger-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px, 6vw, 96px); align-items: center; }
+  .card {
+    background: linear-gradient(160deg, #18221c, #0f1613); border: 1px solid rgba(238,240,232,.14); border-radius: 22px; padding: 26px;
+    box-shadow: 0 40px 80px -30px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.05);
+    transform: rotate(-1.2deg);
+  }
+  .card .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
+  .card .head b { font-family: var(--display); font-weight: 800; font-size: 22px; text-transform: uppercase; letter-spacing: .04em; }
+  .card .head span { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--faint); }
+  .row { display: grid; grid-template-columns: 54px 1fr auto auto; gap: 14px; align-items: center; padding: 13px 0; border-top: 1px solid var(--line); font-size: 15px; }
+  .row .d { color: var(--faint); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+  .row .t { color: var(--ink); }
+  .row .t small { display: block; color: var(--faint); font-size: 12px; margin-top: 2px; }
+  .row .km { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .row .sh { color: var(--moss); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .total { margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(185,207,104,.35); display: flex; justify-content: space-between; align-items: end; }
+  .total .lbl { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--faint); }
+  .total .v { font-family: var(--display); font-weight: 800; font-size: 44px; line-height: 1; color: var(--moss); }
+  .total .v small { font-size: 18px; color: var(--muted); font-weight: 600; margin-left: 6px; }
+  .meter { height: 6px; border-radius: 3px; background: rgba(238,240,232,.1); margin-top: 16px; overflow: hidden; }
+  .meter i { display: block; height: 100%; width: 68%; background: linear-gradient(90deg, var(--moss-deep), var(--moss)); }
+
+  /* ---------- App demo (pinned iPhone) ---------- */
+  .demo { position: relative; height: 560vh; }
+  .demo .pin { position: sticky; top: 0; height: 100vh; height: 100svh; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: clamp(28px, 6vw, 96px); max-width: 1240px; margin: 0 auto; padding-inline: clamp(18px, 6vw, 96px); }
+  .demo .copy { position: relative; }
+  .demo .stack { position: relative; min-height: 400px; }
+  .demo .st { position: absolute; inset: 0; opacity: 0; transform: translateY(18px); transition: opacity .45s ease, transform .45s ease; pointer-events: none; }
+  .demo .st.on { opacity: 1; transform: none; }
+  .demo .st .n { font-family: var(--display); font-weight: 800; font-size: 56px; line-height: 1; color: var(--moss); }
+  .demo .st h4 { font-family: var(--display); font-weight: 800; text-transform: uppercase; line-height: .95; font-size: clamp(40px, 5.2vw, 76px); margin: 14px 0 16px; }
+  .demo .st p { margin: 0; color: var(--muted); font-size: clamp(16px, 1.3vw, 19px); max-width: 40ch; }
+  .demo .dots { display: flex; gap: 8px; margin-top: 28px; }
+  .demo .dots i { width: 28px; height: 3px; border-radius: 2px; background: var(--line); transition: background .3s; }
+  .demo .dots i.on { background: var(--moss); }
+
+  .phone-wrap { display: grid; place-items: center; }
+  .phone { width: 320px; height: 660px; border-radius: 54px; background: #050706; border: 2px solid #2b3430; padding: 12px; position: relative;
+    box-shadow: 0 60px 120px -40px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.06), inset 0 0 0 2px #000; }
+  .phone .island { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); width: 108px; height: 30px; border-radius: 20px; background: #000; z-index: 4; }
+  .phone .screen { position: relative; width: 100%; height: 100%; border-radius: 42px; overflow: hidden; background: linear-gradient(180deg, #121a16, #0d1310); font-family: var(--body); color: var(--ink); }
+  .phone .status { position: absolute; top: 18px; left: 26px; right: 26px; display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; z-index: 3; }
+  .phone .status .sig { font-size: 10px; letter-spacing: .05em; color: var(--muted); }
+  .phone .status .sig b { color: var(--ink); font-weight: 600; margin: 0 4px; }
+  .scr { position: absolute; inset: 0; padding: 70px 22px 26px; display: flex; flex-direction: column; opacity: 0; transform: scale(.985); transition: opacity .45s ease, transform .45s ease; }
+  .scr.on { opacity: 1; transform: none; }
+  .scr .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .scr .lbl { font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .scr .live { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--moss); display: flex; align-items: center; gap: 6px; }
+  .scr .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--moss); box-shadow: 0 0 0 3px rgba(185,207,104,.2); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(185,207,104,0) } }
+  .scr .ok { font-size: 12px; font-weight: 600; color: var(--moss); background: rgba(185,207,104,.12); border-radius: 999px; padding: 4px 10px; }
+  .bigstat { display: flex; align-items: baseline; gap: 8px; }
+  .bigstat b { font-family: var(--display); font-weight: 800; font-size: 78px; line-height: .9; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .bigstat span { color: var(--muted); font-size: 16px; }
+  .stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 18px 0 16px; }
+  .stats3 div { background: rgba(238,240,232,.05); border-radius: 12px; padding: 10px 12px; }
+  .stats3 b { display: block; font-family: var(--display); font-weight: 700; font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stats3 span { font-size: 11px; color: var(--faint); letter-spacing: .08em; text-transform: uppercase; }
+  .map { flex: 1; border-radius: 16px; background: #0a0f0c; border: 1px solid var(--line); overflow: hidden; position: relative; }
+  .map svg { width: 100%; height: 100%; }
+  .map .grid { stroke: rgba(238,240,232,.06); stroke-width: 1; fill: none; }
+  .map #route { fill: none; stroke: var(--moss); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1000; stroke-dashoffset: 1000; filter: drop-shadow(0 0 6px rgba(185,207,104,.5)); }
+  .map #dot { fill: #fff; stroke: var(--moss); stroke-width: 3; }
+  .btn-stop { margin-top: 14px; text-align: center; padding: 14px; border-radius: 999px; background: rgba(238,240,232,.08); font-weight: 600; font-size: 15px; }
+  .ring { position: relative; width: 160px; height: 160px; margin: 6px auto 16px; }
+  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring .bg { fill: none; stroke: rgba(238,240,232,.08); stroke-width: 9; }
+  .ring .fg { fill: none; stroke: var(--moss); stroke-width: 9; stroke-linecap: round; stroke-dasharray: 327; stroke-dashoffset: 327; }
+  .ringtxt { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .ringtxt b { font-family: var(--display); font-weight: 800; font-size: 40px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ringtxt span { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); }
+  .checks-app { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .checks-app li { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; column-gap: 10px; background: rgba(238,240,232,.05); border-radius: 12px; padding: 10px 12px; opacity: .45; transition: opacity .3s, background .3s; }
+  .checks-app li span { font-size: 14px; font-weight: 600; }
+  .checks-app li em { font-style: normal; font-size: 11px; color: var(--faint); grid-column: 1; }
+  .checks-app li i { grid-row: 1 / span 2; grid-column: 2; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid rgba(238,240,232,.25); align-self: center; position: relative; transition: background .3s, border-color .3s; }
+  .checks-app li.ok { opacity: 1; background: rgba(185,207,104,.08); }
+  .checks-app li.ok i { background: var(--moss); border-color: var(--moss); }
+  .checks-app li.ok i::after { content: ""; position: absolute; left: 7px; top: 3px; width: 5px; height: 10px; border: solid #0c110f; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  .credit { text-align: center; padding: 10px 0 18px; }
+  .credit > span { display: block; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); }
+  .credit b { display: block; font-family: var(--display); font-weight: 800; font-size: 84px; line-height: .95; color: var(--moss); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .credit b i { font-style: normal; }
+  .credit .unit { color: var(--muted); font-size: 14px; letter-spacing: .04em; text-transform: none; }
+  .ledger { border-top: 1px solid var(--line); }
+  .lrow { display: grid; grid-template-columns: 38px 1fr auto; gap: 10px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); opacity: 0; transform: translateY(8px); transition: opacity .35s, transform .35s; }
+  .lrow.on { opacity: 1; transform: none; }
+  .lrow .d { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+  .lrow .t { font-size: 14px; }
+  .lrow .t small { display: block; font-size: 11px; color: var(--faint); }
+  .lrow .v { font-weight: 600; color: var(--moss); font-variant-numeric: tabular-nums; }
+  .scr .note { margin-top: auto; text-align: center; font-size: 12px; color: var(--faint); }
+  .scr .sub { color: var(--muted); font-size: 14px; margin: 8px 0 14px; }
+  .scr .sub b { color: var(--ink); font-weight: 600; }
+  .chart { flex: 1; min-height: 120px; border-radius: 14px; background: #0a0f0c; border: 1px solid var(--line); padding: 10px; }
+  .chart svg { width: 100%; height: 100%; }
+  .chart .line { fill: none; stroke: var(--moss); stroke-width: 2.5; stroke-linejoin: round; }
+  .chart .area { fill: url(#g); }
+  .months { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); padding: 8px 6px 0; }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .btn-row span { text-align: center; padding: 13px; border-radius: 999px; font-weight: 600; font-size: 14px; }
+  .btn-row .b1 { background: var(--moss); color: #0c110f; }
+  .btn-row .b2 { background: rgba(238,240,232,.08); }
+
+  /* app: home / claim / portfolio */
+  .scr .brandline { font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: .06em; font-size: 15px; }
+  .chip { font-size: 11px; font-weight: 600; color: var(--muted); background: rgba(238,240,232,.08); border-radius: 999px; padding: 5px 9px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .chip.wallet i { width: 7px; height: 7px; border-radius: 50%; background: var(--moss); }
+  .chip.ok { color: var(--moss); background: rgba(185,207,104,.12); }
+  .balance { background: linear-gradient(160deg, rgba(185,207,104,.16), rgba(185,207,104,.04)); border: 1px solid rgba(185,207,104,.25); border-radius: 18px; padding: 16px 16px 14px; margin-top: 6px; }
+  .balance .lbl { display: block; margin-bottom: 4px; }
+  .balance > b { display: block; font-family: var(--display); font-weight: 800; font-size: 56px; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .balance .claimable { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(185,207,104,.2); font-size: 13px; color: var(--muted); }
+  .balance .claimable b { color: var(--moss); font-weight: 600; }
+  .week { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+  .week div { background: rgba(238,240,232,.05); border-radius: 12px; padding: 10px 12px; }
+  .week b { display: block; font-family: var(--display); font-weight: 700; font-size: 22px; line-height: 1; }
+  .week span { font-size: 11px; color: var(--faint); letter-spacing: .08em; text-transform: uppercase; }
+  .cta-big { margin-top: auto; text-align: center; padding: 16px; border-radius: 999px; background: var(--moss); color: #0c110f; font-weight: 700; font-size: 16px; }
+  .cta-big.pulse { animation: ctapulse 2.2s ease-in-out infinite; }
+  @keyframes ctapulse { 50% { box-shadow: 0 0 0 10px rgba(185,207,104,0); } 0%, 100% { box-shadow: 0 0 0 0 rgba(185,207,104,.35); } }
+  .tabbar { display: grid; grid-template-columns: repeat(3, 1fr); margin: 14px -22px -26px; padding: 12px 22px 22px; border-top: 1px solid var(--line); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); text-align: center; }
+  .tabbar .on { color: var(--moss); }
+  .maptag { position: absolute; left: 10px; bottom: 8px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+  .maptag i { font-style: normal; color: var(--ink); }
+  .formula { margin-top: auto; display: flex; justify-content: space-between; align-items: baseline; background: rgba(238,240,232,.05); border-radius: 12px; padding: 10px 12px; opacity: 0; transition: opacity .35s; }
+  .formula.on { opacity: 1; }
+  .formula span { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .formula span i { font-style: normal; color: var(--ink); }
+  .formula b { font-family: var(--display); font-weight: 800; font-size: 24px; color: var(--moss); font-variant-numeric: tabular-nums; }
+  .formula b i { font-style: normal; }
+  .claimhead { text-align: center; padding: 6px 0 14px; }
+  .claimhead span { display: block; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); }
+  .claimhead b { display: block; font-family: var(--display); font-weight: 800; font-size: 60px; line-height: 1; letter-spacing: -.02em; }
+  .claimhead b small { font-size: 20px; color: var(--muted); font-weight: 700; }
+  .claimhead em { font-style: normal; font-size: 13px; color: var(--muted); }
+  .pick { display: grid; gap: 6px; }
+  .opt { display: grid; grid-template-columns: 62px 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 12px; background: rgba(238,240,232,.05); border: 1px solid transparent; font-size: 13px; }
+  .opt.on { border-color: var(--moss); background: rgba(185,207,104,.1); }
+  .opt .tk { font-weight: 700; }
+  .opt .nm { color: var(--muted); }
+  .opt .px { font-variant-numeric: tabular-nums; color: var(--muted); }
+  .opt.on .px { color: var(--ink); }
+  .youget { display: flex; justify-content: space-between; align-items: baseline; margin: 12px 0 10px; font-size: 13px; color: var(--muted); }
+  .youget b { font-family: var(--display); font-weight: 800; font-size: 26px; color: var(--ink); }
+  .claimbtn { position: relative; margin-top: auto; text-align: center; padding: 16px; border-radius: 999px; background: var(--moss); color: #0c110f; font-weight: 700; font-size: 16px; overflow: hidden; transition: background .3s, color .3s; }
+  .claimbtn i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(12,17,15,.18); transition: width .2s linear; }
+  .claimbtn .t { position: relative; }
+  .claimbtn.wait { background: rgba(238,240,232,.1); color: var(--ink); }
+  .claimbtn.done { background: rgba(185,207,104,.15); color: var(--moss); }
+  .txrow { display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; color: var(--faint); opacity: 0; transform: translateY(6px); transition: opacity .35s, transform .35s; }
+  .txrow b { color: var(--moss); font-weight: 600; }
+  .txrow.on { opacity: 1; transform: none; }
+  .hold { border-top: 1px solid var(--line); margin-top: 12px; }
+  .hrow { display: grid; grid-template-columns: 70px 1fr auto; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px; font-variant-numeric: tabular-nums; opacity: 0; transform: translateY(6px); transition: opacity .35s, transform .35s; }
+  .hrow.on { opacity: 1; transform: none; }
+  .hrow .tk { font-weight: 700; }
+  .hrow .q { color: var(--muted); }
+  .hrow .v { color: var(--moss); font-weight: 600; }
+  .demo .st p b { color: var(--ink); font-weight: 600; }
+
+  @media (max-width: 860px) {
+    .demo { height: 620vh; }
+    .demo .pin { grid-template-columns: 1fr; grid-template-rows: auto 1fr; align-items: start; gap: 18px; padding-top: 70px; }
+    .demo .stack { min-height: 176px; }
+    .demo .st .n { font-size: 32px; }
+    .demo .st h4 { font-size: 30px; margin: 6px 0 8px; }
+    .demo .st p { font-size: 14px; }
+    .demo .dots { margin-top: 12px; }
+    .phone { width: 250px; height: 516px; border-radius: 44px; padding: 9px; }
+    .phone .screen { border-radius: 36px; }
+    .phone .island { width: 84px; height: 24px; top: 18px; }
+    .phone .status { top: 14px; left: 22px; right: 22px; font-size: 11px; }
+    .scr { padding: 54px 16px 18px; }
+    .bigstat b { font-size: 56px; }
+    .stats3 { margin: 12px 0 10px; }
+    .stats3 b { font-size: 18px; }
+    .ring { width: 120px; height: 120px; margin: 0 auto 10px; }
+    .ringtxt b { font-size: 30px; }
+    .checks-app { gap: 6px; }
+    .checks-app li { padding: 8px 10px; }
+    .credit b { font-size: 60px; }
+    .lrow { padding: 8px 0; }
+    .btn-stop { padding: 11px; }
+    .btn-row span { font-size: 13px; padding: 11px 6px; }
+    .balance > b { font-size: 42px; }
+    .week { margin: 10px 0; }
+    .tabbar { margin: 10px -16px -18px; padding: 10px 16px 14px; }
+    .scr .brandline { font-size: 12px; letter-spacing: .03em; }
+    .claimhead { padding: 0 0 8px; }
+    .claimhead b { font-size: 40px; }
+    .claimhead b small { font-size: 15px; }
+    .pick { gap: 5px; }
+    .opt { padding: 7px 10px; font-size: 12px; grid-template-columns: 52px 1fr auto; }
+    .youget { margin: 8px 0 6px; }
+    .youget b { font-size: 20px; }
+    .claimbtn { padding: 12px; font-size: 14px; }
+    .txrow { margin-top: 6px; font-size: 10px; }
+    .chart { min-height: 70px; padding: 6px; }
+    .hrow { padding: 6px 0; font-size: 12px; }
+    .scr .sub { margin: 4px 0 8px; font-size: 12px; }
+    .formula { padding: 8px 10px; }
+    .formula b { font-size: 20px; }
+  }
+
+  /* Band */
+  .band { position: relative; min-height: 78vh; display: grid; place-items: center; text-align: center; overflow: hidden; isolation: isolate; }
+  .band img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; filter: saturate(.9); }
+  .band::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(to bottom, rgba(12,17,15,.85), rgba(12,17,15,.35) 40%, rgba(12,17,15,.35) 60%, rgba(12,17,15,.9)); }
+  .band blockquote { margin: 0; padding: 0 clamp(18px, 6vw, 96px); max-width: 1100px; }
+  .band blockquote p { font-family: var(--display); font-weight: 800; text-transform: uppercase; line-height: .95; font-size: clamp(40px, 7.5vw, 112px); margin: 0; text-shadow: 0 2px 40px rgba(0,0,0,.5); }
+  .band blockquote p em { font-style: normal; color: var(--moss); }
+  .band blockquote footer { margin-top: 26px; font-size: 13px; letter-spacing: .3em; text-transform: uppercase; color: var(--haze); }
+
+  /* Numbers */
+  .numbers { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .num { padding: 40px 28px 40px 0; }
+  .num + .num { padding-left: 28px; border-left: 1px solid var(--line); }
+  .num b { display: block; font-family: var(--display); font-weight: 800; font-size: clamp(48px, 6vw, 84px); line-height: 1; letter-spacing: -.02em; }
+  .num b em { font-style: normal; color: var(--moss); }
+  .num span { display: block; margin-top: 10px; color: var(--muted); font-size: 15px; max-width: 26ch; }
+
+  /* FAQ */
+  .faq { border-top: 1px solid var(--line); margin-top: clamp(32px, 5vw, 64px); }
+  .faq details { border-bottom: 1px solid var(--line); }
+  .faq summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 24px 0; font-family: var(--display); font-weight: 700; text-transform: uppercase; font-size: 24px; letter-spacing: .01em; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; font-family: var(--body); font-weight: 400; color: var(--moss); font-size: 28px; line-height: 1; transition: transform .25s; }
+  .faq details[open] summary::after { transform: rotate(45deg); }
+  .faq details p { margin: 0 0 26px; color: var(--muted); max-width: 64ch; }
+
+  /* CTA */
+  .cta { background: var(--bg-2); border-top: 1px solid var(--line); }
+  .cta .inner { display: grid; grid-template-columns: 1.1fr .9fr; gap: clamp(28px, 6vw, 96px); align-items: center; }
+  .cta h3.big { font-size: clamp(40px, 5.6vw, 84px); }
+  form.join { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  form.join input { flex: 1 1 260px; padding: 16px 20px; border-radius: 999px; border: 1px solid rgba(238,240,232,.22); background: rgba(238,240,232,.05); color: var(--ink); font: inherit; outline: none; transition: border-color .15s; }
+  form.join input:focus { border-color: var(--moss); }
+  form.join input::placeholder { color: var(--faint); }
+  form.join button { border: 0; cursor: pointer; font: inherit; font-weight: 600; }
+  .fine { margin: 14px 0 0; font-size: 13px; color: var(--faint); }
+
+  /* Footer */
+  .footer { padding: 36px 0 44px; }
+  .footer .inner { display: flex; justify-content: space-between; align-items: center; gap: 18px; flex-wrap: wrap; color: var(--faint); font-size: 13px; }
+  .footer .brand { font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink); text-decoration: none; }
+  .footer nav { display: flex; gap: 22px; }
+  .footer nav a { text-decoration: none; color: var(--muted); }
+  .footer nav a:hover { color: var(--ink); }
+
+  .notrans * { transition: none !important; animation: none !important; }
+
+  @media (max-width: 860px) {
+    .two, .ledger-grid, .cta .inner { grid-template-columns: 1fr; }
+    .steps, .numbers { grid-template-columns: 1fr; }
+    .step + .step, .num + .num { padding-left: 0; border-left: 0; }
+    .step { padding-right: 0; }
+    .num { padding: 28px 0; border-bottom: 1px solid var(--line); }
+    .num:last-child { border-bottom: 0; }
+    .card { transform: none; }
+    .row { grid-template-columns: 44px 1fr auto; }
+    .row .km { display: none; }
+    .faq summary { font-size: 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scrub { height: auto; }
+    .scrub .stage { position: relative; }
+    .grain, .scrub canvas { animation: none; }
+    .cap { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="#">Sweat-to-Stock</a>
+  <a class="cta" href="#join">Join the beta</a>
+</nav>
+
+<section class="scrub" id="scrub" aria-label="Intro">
+  <div class="stage">
+    <img class="poster" src="media/poster.jpg" alt="" aria-hidden="true">
+    <canvas id="cv" aria-hidden="true"></canvas>
+    <video class="loop" id="loop" src="media/loop.mp4" muted loop playsinline preload="auto" aria-hidden="true"></video>
+    <div class="grain"></div>
+    <div class="vignette"></div>
+    <div class="dim"></div>
+
+    <div class="cap bottom" data-from="0.00" data-to="0.14">
+      <p class="kicker">Sweat-to-Stock</p>
+      <h2>Every stride<br>counts.</h2>
+    </div>
+    <div class="cap bottom" data-from="0.34" data-to="0.60">
+      <p class="kicker">Move to earn, for real</p>
+      <h2>You run.<br>You <em>own</em>.</h2>
+    </div>
+    <div class="cap center" data-from="0.86" data-to="1.01">
+      <p class="kicker">Your sweat becomes equity</p>
+      <h2>Sweat in.<br><em>Stock out.</em></h2>
+      <p>Every verified kilometre earns ROAD. Claim it into stock tokens on Robinhood Chain, straight into your wallet. No points to hoard, no game to play.</p>
+      <div class="actions">
+        <a class="btn primary" href="#join">Join the beta</a>
+        <a class="btn ghost" href="#how">How it works</a>
+      </div>
+    </div>
+
+    <div class="hint" id="hint">Scroll<span></span></div>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="loader" id="loader"><div><b>Loading</b><i><s id="ls"></s></i></div></div>
+  </div>
+</section>
+
+<!-- Manifesto -->
+<section class="section" id="manifesto">
+  <div class="wrap two">
+    <div>
+      <p class="eyebrow">The idea</p>
+      <h3 class="big">The ground first.<br>Then the <em>world</em>.</h3>
+    </div>
+    <div class="side">
+      <p class="lede">We don't sell a dream. We count strides. Your phone records the proof, the protocol verifies it, and the reward is a formula you can check. The rest is you.</p>
+      <ul class="checks">
+        <li>Stock tokens on Robinhood Chain: AAPLx, NVDAx, TSLAx and 90 more, tradable 24/7.</li>
+        <li>In your own wallet. Swap them, hold them, use them as collateral.</li>
+        <li>Only verified kilometres pay. The reward is <b>km × 100 × quality</b>, on-chain.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- App demo: pinned iPhone, the real Sweat-to-Stock flow, screens change with scroll -->
+<section class="demo" id="how" aria-label="App demo">
+  <div class="pin">
+    <div class="copy">
+      <p class="eyebrow">The app</p>
+      <div class="stack">
+        <div class="st" data-i="0"><div class="n">01</div><h4>Connect, then run</h4><p>Your Robinhood Wallet is the account. No sign-up, no broker form. Your ROAD balance and what's claimable sit on the home screen.</p></div>
+        <div class="st" data-i="1"><div class="n">02</div><h4>Proof of run</h4><p>The app records the GPS track, cadence and elevation at 1 Hz. This is the evidence, not the distance on its own.</p></div>
+        <div class="st" data-i="2"><div class="n">03</div><h4>Verified, then paid in ROAD</h4><p>Every kilometre passes four checks. The reward is a formula, not a promise: <b>km × 100 × quality</b>. A clean 8.4 km run is 840 ROAD.</p></div>
+        <div class="st" data-i="3"><div class="n">04</div><h4>Claim into stock tokens</h4><p>Pick a stock, press Claim, confirm in the wallet. ROAD is swapped on-chain into a Stock Token on Robinhood Chain. One transaction, 100 ms blocks, a hash you can open.</p></div>
+        <div class="st" data-i="4"><div class="n">05</div><h4>Your portfolio, on-chain</h4><p>Stock Tokens are plain ERC-20s in your wallet: hold them, swap them on Uniswap, use them as collateral. Every claim is on the proof ledger.</p></div>
+      </div>
+      <div class="dots"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="island"></div>
+        <div class="screen">
+          <div class="status"><span id="clock">06:12</span><span class="sig">●●● <b>5G</b> ▮</span></div>
+
+          <!-- 1. Home -->
+          <div class="scr" data-i="0">
+            <div class="top"><span class="brandline">Sweat-to-Stock</span><span class="chip wallet"><i></i>0x7a3f…c21e</span></div>
+            <div class="balance">
+              <span class="lbl">ROAD balance</span>
+              <b id="bal">1,240</b>
+              <div class="claimable"><span>Claimable</span><b id="clm0">0 ROAD</b></div>
+            </div>
+            <div class="week"><div><b>3</b><span>runs</span></div><div><b>30.6</b><span>km</span></div><div><b>3,060</b><span>ROAD</span></div></div>
+            <div class="cta-big pulse">Start run</div>
+            <div class="tabbar"><span class="on">Run</span><span>Claim</span><span>Portfolio</span></div>
+          </div>
+
+          <!-- 2. Run -->
+          <div class="scr" data-i="1">
+            <div class="top"><span class="lbl">Morning run</span><span class="live"><i></i>Proof of run</span></div>
+            <div class="bigstat"><b id="km">0.00</b><span>km</span></div>
+            <div class="stats3"><div><b id="pace">0:00</b><span>/km</span></div><div><b id="time">00:00</b><span>time</span></div><div><b id="cad">0</b><span>spm</span></div></div>
+            <div class="map">
+              <svg viewBox="0 0 260 200" preserveAspectRatio="none" aria-hidden="true">
+                <path class="grid" d="M0 50H260M0 100H260M0 150H260M65 0V200M130 0V200M195 0V200"/>
+                <path id="route" d="M18 170 C 40 150, 50 120, 80 118 S 120 140, 140 110 S 160 60, 200 58 S 240 40, 246 26"/>
+                <circle id="dot" r="5" cx="18" cy="170"/>
+              </svg>
+              <span class="maptag">GPS · 1 Hz · <i id="pts">0</i> points</span>
+            </div>
+            <div class="btn-stop">Stop</div>
+          </div>
+
+          <!-- 3. Verified -->
+          <div class="scr" data-i="2">
+            <div class="top"><span class="lbl">Ridge loop · 8.4 km</span><span class="chip" id="vstate">Verifying</span></div>
+            <div class="ring">
+              <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="bg" cx="60" cy="60" r="52"/><circle id="ringfg" class="fg" cx="60" cy="60" r="52"/></svg>
+              <div class="ringtxt"><b id="ringpct">0%</b><span>quality</span></div>
+            </div>
+            <ul class="checks-app">
+              <li><span>GPS track</span><em>Continuous, no teleport</em><i></i></li>
+              <li><span>Cadence</span><em>168 spm, human</em><i></i></li>
+              <li><span>Elevation</span><em>+312 m, matches terrain</em><i></i></li>
+              <li><span>History</span><em>Consistent with your pace</em><i></i></li>
+            </ul>
+            <div class="formula" id="formula"><span>8.4 km × 100 × <i id="qv">1.00</i></span><b>+<i id="sw">0</i> ROAD</b></div>
+          </div>
+
+          <!-- 4. Claim -->
+          <div class="scr" data-i="3">
+            <div class="top"><span class="lbl">Claim</span><span class="chip wallet"><i></i>0x7a3f…c21e</span></div>
+            <div class="claimhead"><span>Claimable</span><b>840 <small>ROAD</small></b><em>≈ 8.40 USDG</em></div>
+            <div class="pick">
+              <div class="opt on"><span class="tk">AAPLx</span><span class="nm">Apple</span><span class="px">203.90</span></div>
+              <div class="opt"><span class="tk">NVDAx</span><span class="nm">Nvidia</span><span class="px">118.20</span></div>
+              <div class="opt"><span class="tk">TSLAx</span><span class="nm">Tesla</span><span class="px">247.35</span></div>
+            </div>
+            <div class="youget"><span>You get</span><b>0.0412 AAPLx</b></div>
+            <div class="claimbtn" id="claimbtn"><span class="t">Claim</span><i></i></div>
+            <div class="txrow" id="txrow"><span>Confirmed · block 4,812,207</span><b>0x9c4e…71a1 ↗</b></div>
+          </div>
+
+          <!-- 5. Portfolio -->
+          <div class="scr" data-i="4">
+            <div class="top"><span class="lbl">Portfolio</span><span class="ok">On-chain</span></div>
+            <div class="bigstat"><b id="tot">0.00</b><span>USDG</span></div>
+            <div class="sub"><b id="sw2">0</b> ROAD claimed · 214 km verified</div>
+            <div class="chart">
+              <svg viewBox="0 0 260 120" preserveAspectRatio="none" aria-hidden="true">
+                <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#b9cf68" stop-opacity=".35"/><stop offset="1" stop-color="#b9cf68" stop-opacity="0"/></linearGradient><clipPath id="clip"><rect id="cliprect" x="0" y="0" width="0" height="120"/></clipPath></defs>
+                <g clip-path="url(#clip)">
+                  <path class="area" d="M0 108 L26 100 L52 104 L78 88 L104 90 L130 72 L156 76 L182 58 L208 50 L234 40 L260 22 L260 120 L0 120 Z"/>
+                  <path class="line" d="M0 108 L26 100 L52 104 L78 88 L104 90 L130 72 L156 76 L182 58 L208 50 L234 40 L260 22"/>
+                </g>
+              </svg>
+            </div>
+            <div class="hold">
+              <div class="hrow"><span class="tk">AAPLx</span><span class="q">0.4120</span><span class="v">84.01</span></div>
+              <div class="hrow"><span class="tk">NVDAx</span><span class="q">0.1300</span><span class="v">15.37</span></div>
+              <div class="hrow"><span class="tk">TSLAx</span><span class="q">0.0770</span><span class="v">19.04</span></div>
+            </div>
+            <div class="btn-row"><span class="b1">Run</span><span class="b2">Swap</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Band -->
+<section class="band" aria-label="Manifesto">
+  <img src="media/band.jpg" alt="" aria-hidden="true">
+  <blockquote>
+    <p>You don't buy in.<br>You <em>run</em> in.</p>
+    <footer>Sweat-to-Stock</footer>
+  </blockquote>
+</section>
+
+<!-- Numbers -->
+<section class="section" id="numbers">
+  <div class="wrap">
+    <div class="numbers">
+      <div class="num"><b>100 <em>ROAD</em></b><span>per verified kilometre, times a quality score from 0 to 1. That is the whole formula.</span></div>
+      <div class="num"><b>95 <em>stocks</em></b><span>to claim into, as Stock Tokens on Robinhood Chain, tradable 24 hours a day.</span></div>
+      <div class="num"><b>100 <em>ms</em></b><span>blocks. A claim is confirmed before you have finished stretching.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq" style="padding-top:0">
+  <div class="wrap">
+    <p class="eyebrow">Questions</p>
+    <h3 class="big">Straight <em>answers</em>.</h3>
+    <div class="faq">
+      <details><summary>What do I actually receive?</summary><p>Stock Tokens on Robinhood Chain: ERC-20 tokens that track a listed stock and trade 24/7. They live in your own wallet, not in our app. To be clear, they give economic exposure to the underlying stock, not legal ownership of the shares.</p></details>
+      <details><summary>How do you know I really ran?</summary><p>The app records a proof of run: GPS track at 1 Hz, cadence, elevation, and how it compares to your history. Four checks produce a quality score between 0 and 1, and the reward is km × 100 × quality. A run that fails the checks scores 0 and earns nothing.</p></details>
+      <details><summary>Does it cost anything?</summary><p>No subscription. A claim is one on-chain swap, and the protocol keeps a small fee on it. If you don't run, we don't earn. Gas on Robinhood Chain is a fraction of a cent.</p></details>
+      <details><summary>Is this live?</summary><p>Not yet. The numbers on this page are illustrative and the beta opens this autumn. Leave your e-mail below and we'll write once, when it does.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section cta" id="join">
+  <div class="wrap inner">
+    <div>
+      <p class="eyebrow">Beta</p>
+      <h3 class="big">The beta opens<br>this <em>autumn</em>.</h3>
+    </div>
+    <div>
+      <p class="lede">Leave your e-mail. One message when the beta opens, nothing else.</p>
+      <form class="join" onsubmit="event.preventDefault(); this.querySelector('button').textContent='Thanks, see you on the trail.';">
+        <input type="email" required placeholder="you@email.com" aria-label="E-mail">
+        <button class="btn primary" type="submit">Get in</button>
+      </form>
+      <p class="fine">No spam. No sharing. Unsubscribe in one click.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap inner">
+    <a class="brand" href="#">Sweat-to-Stock</a>
+    <nav><a href="#manifesto">Idea</a><a href="#how">How it works</a><a href="#faq">FAQ</a><a href="#join">Beta</a></nav>
+    <span>© 2026 Sweat-to-Stock</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const FRAME_COUNT = 193;              // landing/frames/f_0001.webp … f_0193.webp
+  const src = i => `frames/f_${String(i + 1).padStart(4, '0')}.webp`;
+
+  const section = document.getElementById('scrub');
+  const stage = section.querySelector('.stage');
+  const canvas = document.getElementById('cv');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const loop = document.getElementById('loop');
+  const hint = document.getElementById('hint');
+  const bar = document.getElementById('bar');
+  const loader = document.getElementById('loader');
+  const ls = document.getElementById('ls');
+  const caps = [...document.querySelectorAll('.cap')].map(el => ({ el, from: +el.dataset.from, to: +el.dataset.to }));
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- Reduced motion: plain autoplaying video, no scrub ----
+  if (reduced) {
+    canvas.remove(); loader.remove(); hint.remove();
+    loop.src = 'media/intro-trail-720p.mp4'; loop.loop = true; loop.classList.add('on'); loop.play().catch(() => {});
+    caps.forEach(c => c.el.classList.toggle('on', c.to >= 1));
+    return;
+  }
+
+  // ---- Frame loading ----
+  const frames = new Array(FRAME_COUNT);
+  let loaded = 0;
+  const load = i => new Promise(res => {
+    const img = new Image();
+    img.onload = img.onerror = () => { frames[i] = img.naturalWidth ? img : null; loaded++; ls.style.width = (loaded / FRAME_COUNT * 100) + '%'; res(); };
+    img.src = src(i);
+  });
+  load(0).then(async () => {
+    draw(0);
+    loader.classList.add('off');
+    const queue = [...Array(FRAME_COUNT).keys()].slice(1);
+    const workers = Array.from({ length: 6 }, async () => { while (queue.length) await load(queue.shift()); });
+    await Promise.all(workers);
+    drawn = -1;   // next tick redraws with the real frame if the user scrolled while loading
+  });
+
+  // ---- Canvas sizing (cover) ----
+  let cw = 0, ch = 0, dpr = 1;
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    cw = innerWidth; ch = stage.clientHeight;
+    canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
+    canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px';
+    drawn = -1;
+  }
+  addEventListener('resize', resize, { passive: true });
+
+  let drawn = -1;
+  function blit(img, alpha) {
+    const s = Math.max(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight);
+    const w = img.naturalWidth * s, h = img.naturalHeight * s;
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+    ctx.globalAlpha = 1;
+  }
+  // Draws fractional position pos (0..N-1): frame below + fade toward the next one.
+  function draw(pos) {
+    const i = Math.floor(pos), t = pos - i;
+    const a = frames[i] || nearest(i), b = frames[i + 1];
+    if (!a) return;
+    blit(a, 1);
+    if (b && t > 0.02) blit(b, t);
+    drawn = pos;
+  }
+  function nearest(i) { for (let d = 1; d < FRAME_COUNT; d++) { if (frames[i - d]) return frames[i - d]; if (frames[i + d]) return frames[i + d]; } return null; }
+
+  // ---- Inertial scrolling + smoothed progress ----
+  // The wheel no longer moves the page directly: each notch pushes a target, and the page glides toward it
+  // with an exponential ease. Release the wheel and it keeps gliding, then settles softly.
+  // The video is smoothed a second time behind the scroll, then settles onto a whole, sharp frame.
+  const SCROLL_TAU = 0.45;   // seconds — scroll inertia (bigger = glides longer after release)
+  const FRAME_TAU  = 0.20;   // seconds — video smoothing behind the scroll
+  const WHEEL_GAIN = 0.9;    // amplitude of one wheel notch
+
+  let scrollTarget = scrollY, scrollPos = scrollY, wheelActive = false;
+  const maxScroll = () => document.documentElement.scrollHeight - innerHeight;
+  addEventListener('wheel', e => {
+    if (e.ctrlKey) return;                                   // browser zoom: leave it alone
+    e.preventDefault();
+    let d = e.deltaY;
+    if (e.deltaMode === 1) d *= 16; else if (e.deltaMode === 2) d *= innerHeight;
+    if (!wheelActive) { wheelActive = true; scrollTarget = scrollPos = scrollY; }
+    scrollTarget = Math.min(maxScroll(), Math.max(0, scrollTarget + d * WHEEL_GAIN));
+  }, { passive: false });
+  // Scroll coming from elsewhere (keyboard, touch, scrollbar): realign on it.
+  addEventListener('scroll', () => { if (Math.abs(scrollY - scrollPos) > 2) { scrollTarget = scrollPos = scrollY; wheelActive = false; } }, { passive: true });
+  // Anchor links glide with the same inertia instead of jumping.
+  document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+    const href = a.getAttribute('href');
+    const el = href.length > 1 && document.querySelector(href);
+    e.preventDefault();
+    if (!wheelActive) { wheelActive = true; scrollPos = scrollY; }
+    scrollTarget = el ? Math.min(maxScroll(), el.getBoundingClientRect().top + scrollY) : 0;
+  }));
+
+
+  // ---- App demo: the real flow (connect → run → proof → claim → portfolio), driven by the pinned section's scroll ----
+  const demo = document.getElementById('how');
+  const $ = id => document.getElementById(id);
+  const STEPS = 5;
+  const stSteps = [...demo.querySelectorAll('.st')], scrs = [...demo.querySelectorAll('.scr')], dots = [...demo.querySelectorAll('.dots i')];
+  const checks = [...demo.querySelectorAll('.checks-app li')], hrows = [...demo.querySelectorAll('.hrow')];
+  const routeEl = $('route'), routeLen = routeEl.getTotalLength();
+  routeEl.style.strokeDasharray = routeLen; routeEl.style.strokeDashoffset = routeLen;
+  const ringLen = 2 * Math.PI * 52;
+  const claimBtn = $('claimbtn'), claimTxt = claimBtn.querySelector('.t'), claimBar = claimBtn.querySelector('i');
+  let demoCur = 0, demoStep = -1;
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const fmtTime = s => { s = Math.round(s); const m = Math.floor(s / 60), r = s % 60; return (m < 10 ? '0' : '') + m + ':' + (r < 10 ? '0' : '') + r; };
+  const pad2 = n => (n < 10 ? '0' : '') + n;
+  const fmtInt = n => Math.round(n).toLocaleString('en-GB');
+
+  function updateDemo(dt) {
+    const r = demo.getBoundingClientRect();
+    const total = demo.offsetHeight - innerHeight;
+    const tgt = Math.min(1, Math.max(0, -r.top / total));
+    demoCur += (tgt - demoCur) * (1 - Math.exp(-dt / FRAME_TAU));
+    if (r.bottom < 0 || r.top > innerHeight) return;          // off screen: nothing to do
+
+    const x = Math.min(STEPS - 0.001, demoCur * STEPS), i = Math.floor(x), t = x - i;
+    const u = Math.min(1, Math.max(0, (t - 0.08) / 0.84));   // margin so the screen transition plays first
+    if (i !== demoStep) {
+      demoStep = i;
+      stSteps.forEach((el, k) => el.classList.toggle('on', k === i));
+      scrs.forEach((el, k) => el.classList.toggle('on', k === i));
+      dots.forEach((el, k) => el.classList.toggle('on', k <= i));
+    }
+    if (i === 0) {
+      $('clock').textContent = '06:12';
+    } else if (i === 1) {
+      const e = easeOut(u), km = 8.4 * e;
+      $('km').textContent = km.toFixed(2);
+      $('time').textContent = fmtTime(km * 304);
+      $('pace').textContent = km < 0.05 ? '0:00' : '5:0' + ((4 + Math.round(Math.sin(u * 9) * 3 + 3)) % 6);
+      $('cad').textContent = km < 0.05 ? '0' : String(164 + Math.round(Math.sin(u * 7) * 4));
+      $('pts').textContent = fmtInt(km * 304);
+      routeEl.style.strokeDashoffset = routeLen * (1 - e);
+      const pt = routeEl.getPointAtLength(routeLen * e); $('dot').setAttribute('cx', pt.x); $('dot').setAttribute('cy', pt.y);
+      $('clock').textContent = '06:' + pad2((12 + Math.floor(km * 5.07)) % 60);
+    } else if (i === 2) {
+      const v = Math.min(1, u / 0.7);                         // checks over the first 70 %, then the reward
+      $('ringfg').style.strokeDashoffset = ringLen * (1 - v);
+      $('ringpct').textContent = Math.round(v * 100) + '%';
+      checks.forEach((li, k) => li.classList.toggle('ok', v > (k + 1) / 4.6));
+      const done = u > 0.72;
+      $('vstate').textContent = done ? 'Verified ✓' : 'Verifying';
+      $('vstate').classList.toggle('ok', done);
+      $('formula').classList.toggle('on', u > 0.5);
+      const w = Math.min(1, Math.max(0, (u - 0.72) / 0.28));
+      $('sw').textContent = fmtInt(840 * easeOut(w));
+      $('qv').textContent = v.toFixed(2);
+    } else if (i === 3) {
+      // 0–0.3 choose the stock · 0.3–0.5 confirm in wallet · 0.5–0.72 pending · > 0.72 confirmed
+      let cls = '', txt = 'Claim', bar = 0;
+      if (u > 0.72) { cls = 'done'; txt = 'Confirmed ✓'; bar = 0; }
+      else if (u > 0.5) { cls = 'wait'; txt = 'Pending on-chain…'; bar = (u - 0.5) / 0.22; }
+      else if (u > 0.3) { cls = 'wait'; txt = 'Confirm in wallet…'; bar = 0; }
+      claimBtn.className = 'claimbtn ' + cls; claimTxt.textContent = txt; claimBar.style.width = (bar * 100) + '%';
+      $('txrow').classList.toggle('on', u > 0.72);
+    } else {
+      const e = easeOut(u);
+      $('tot').textContent = (118.42 * e).toFixed(2);
+      $('sw2').textContent = fmtInt(21400 * e);
+      $('cliprect').setAttribute('width', 260 * e);
+      hrows.forEach((el, k) => el.classList.toggle('on', u > 0.35 + k * 0.18));
+    }
+  }
+
+  let progress = () => {
+    const r = section.getBoundingClientRect();
+    const total = section.offsetHeight - innerHeight;
+    return Math.min(1, Math.max(0, -r.top / total));
+  };
+  let target = 0, current = 0, drawPos = 0, loopOn = false, dbg = null, last = performance.now();
+
+  function tick(now) {
+    const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000)); last = now;
+
+    if (wheelActive) {
+      scrollPos += (scrollTarget - scrollPos) * (1 - Math.exp(-dt / SCROLL_TAU));
+      if (Math.abs(scrollTarget - scrollPos) < 0.25) { scrollPos = scrollTarget; wheelActive = false; }
+      window.scrollTo(0, scrollPos);
+    }
+
+    target = progress();
+    current += (target - current) * (1 - Math.exp(-dt / FRAME_TAU));
+    if (Math.abs(target - current) < 0.00003) current = target;
+
+    // Moving: fractional position (cross-fade). At rest: ease onto a whole, sharp frame.
+    const raw = current * (FRAME_COUNT - 1);
+    const goal = (current === target && !wheelActive) ? Math.round(raw) : raw;
+    drawPos += (goal - drawPos) * (1 - Math.exp(-dt / 0.08));
+    if (Math.abs(goal - drawPos) < 0.003) drawPos = goal;
+    if (Math.abs(drawPos - drawn) > 0.004) draw(drawPos);
+
+    bar.style.width = (current * 100) + '%';
+    if (dbg) dbg.textContent = 'progress ' + current.toFixed(3) + ' | caps on: ' + caps.map((c, i) => c.el.classList.contains('on') ? i + 1 : '').join('') + ' | drawn ' + drawn.toFixed(2);
+    hint.classList.toggle('off', current > 0.03);
+    caps.forEach(c => c.el.classList.toggle('on', current >= c.from && current < c.to));
+    stage.classList.toggle('end', current >= 0.86);
+
+    updateDemo(dt);
+
+    const wantLoop = target >= 0.985;
+    if (wantLoop !== loopOn) {
+      loopOn = wantLoop;
+      loop.classList.toggle('on', loopOn);
+      if (loopOn) { loop.currentTime = 0; loop.play().catch(() => {}); } else loop.pause();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  resize();
+  requestAnimationFrame(tick);
+
+  // Debug / tests: index.html?p=0.5 scrolls to 50 % of the sequence on load.
+  const q = new URLSearchParams(location.search);
+  const p = parseFloat(q.get('p'));
+  if (!isNaN(p)) setTimeout(() => scrollTo(0, p * (section.offsetHeight - innerHeight)), 600);
+  const d = parseFloat(q.get('d'));           // ?d=0.5 forces the demo progress (screenshots): 5 steps of 0.2 — home, run, proof, claim, portfolio
+  if (!isNaN(d)) { demo.getBoundingClientRect = () => ({ top: -d * (demo.offsetHeight - innerHeight), bottom: innerHeight }); demoCur = d; document.body.classList.add('notrans'); }
+  const f = parseFloat(q.get('f'));           // ?f=0.5 forces the progress without scrolling (screenshots)
+  if (!isNaN(f)) { progress = () => f; target = current = f; drawPos = f * (FRAME_COUNT - 1); document.body.classList.add('notrans'); dbg = document.body.appendChild(document.createElement('div')); dbg.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99;font:12px monospace;color:#0f0;background:#000;padding:4px 6px'; }
+})();
+</script>
+</body>
+</html>
