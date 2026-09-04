@@ -1,0 +1,16 @@
+{
+  "name": "sweat-to-stock",
+  "version": "1.0.0",
+  "description": "Sweat-to-Stock: run, prove it, claim stock tokens. Static site + installable web app.",
+  "private": true,
+  "scripts": {
+    "start": "serve -l 3000 --no-clipboard .",
+    "dev": "serve -l 3000 --no-clipboard .",
+    "build": "node build.js",
+    "preview": "serve -l 3000 --no-clipboard dist"
+  },
+  "devDependencies": {
+    "serve": "^14.2.4"
+  },
+  "engines": { "node": ">=18" }
+}
