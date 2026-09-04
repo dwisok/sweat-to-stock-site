@@ -277,6 +277,11 @@
   .notrans * { transition: none !important; animation: none !important; }
   html.shot #app { display: flex !important; max-width: 390px !important; }
   html.shot #side { display: none !important; }
+  html.shot body.detail-open #side { display: block !important; position: fixed !important; inset: 0 !important; z-index: 8; border-left: 0 !important; overflow: auto; }
+  html.shot .detail { padding: calc(var(--sat) + 14px) 20px 40px !important; }
+  html.shot .lmap { height: 380px !important; min-height: 0 !important; }
+  html.shot .dgrid { grid-template-columns: 1fr !important; }
+  html.shot .dhead .back { display: inline-flex !important; }
   html.shot .tabbar { position: fixed !important; max-width: 390px !important; padding-bottom: 12px !important; }
   .cta-big.done { background: rgba(185,207,104,.15); color: var(--moss); }
   .mini { height: 150px; border-radius: 14px; background: #0a0f0c; border: 1px solid var(--line); overflow: hidden; margin-top: 12px; }
@@ -1054,40 +1059,83 @@
   // ---------- boot ----------
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('../sw.js').then(r => r.update()).catch(() => {});
   renderHome(); syncPayouts(false); flushPending();
-  // ---- shot mode (video / screenshots): ?shot=verify&km=8.2&t=1.2  |  ?shot=claim&road=2140&t=1.6&tap=1.4  (+ &zoom=3) ----
+  // ---- shot mode (video / screenshots) ----
+  // ?shot=home|run|verify|claim|detail|portfolio  &t=<s>  &zoom=3  (+ &km=, &road=, &tap=, &speed= for run)
+  // The page freezes the real app at time t; window.__shotSet(t) moves it to another time without reloading.
   const shot = q.get('shot');
   if (shot) {
     document.body.classList.add('notrans'); document.documentElement.classList.add('shot');
     if (q.get('zoom')) { const z = q.get('zoom'), app = $('app'); app.style.cssText = 'transform:scale(' + z + ');transform-origin:0 0;width:390px;max-width:390px;margin:0;min-height:844px'; document.documentElement.style.setProperty('--sat', '48px'); }
-    const t = parseFloat(q.get('t') || '0'), tap = parseFloat(q.get('tap') || '1.4'), ease = x => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
-    S.wallet = '0x7a3fE2b19c04d5A6f8e7C3b2a1D0e9F8c7B6c21e';
+    const tap = parseFloat(q.get('tap') || '1.4'), ease = x => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
+    let rng = 7; const rnd = () => { rng = (rng * 1103515245 + 12345) % 2147483648; return rng / 2147483648; };
+    S.wallet = '0x7a3fE2b19c04d5A6f8e7C3b2a1D0e9F8c7B6c21e'; S.stock = 'AAPLx';
     renderWallet();
-    if (shot === 'verify') {
-      const km = parseFloat(q.get('km') || '8.2'), run = { km, quality: 1, road: Math.round(km * CFG.ROAD_PER_KM), sim: false, checks: { gps: { s: 1, note: Math.round(km * 340) + ' fixes, no teleport' }, pace: { s: 1, note: '5:24 /km, human' }, cad: { s: 1, note: '172 spm, human' }, hist: { s: 1, note: 'In line with your usual pace' } } };
-      show('verify');
-      $('y-title').textContent = 'Run · ' + km.toFixed(2) + ' km'; $('y-km').textContent = km.toFixed(2); $('y-rpk').textContent = CFG.ROAD_PER_KM;
-      const lis = [...$('y-checks').querySelectorAll('li')];
-      lis.forEach((li, k) => { const on = t > 0.2 + k * 0.28, c = run.checks[li.dataset.k]; li.className = on ? 'on ok' : ''; li.querySelector('em').textContent = on ? c.note : ''; li.querySelector('i').textContent = ''; });
-      const u = ease((t - 1.35) / 0.75), done = t > 1.35;
-      $('y-ringfg').style.strokeDashoffset = 327 * (1 - u); $('y-pct').textContent = Math.round(100 * u) + '%'; $('y-q').textContent = u.toFixed(2); $('y-road').textContent = fmtInt(run.road * u);
-      const st = $('y-state'); st.className = 'chip ' + (done ? 'ok' : ''); st.querySelector('span').textContent = done ? 'Verified ✓' : 'Verifying';
-    } else if (shot === 'claim') {
-      const road = parseInt(q.get('road') || '2140');
-      S.runs = [{ id: 'shot1', start: Date.now() - 3600e3, km: road / CFG.ROAD_PER_KM, road, quality: 1, sim: false, claim: null, movingS: 1, durS: 1, pts: 1 }]; S.claims = []; S.stock = 'AAPLx';
-      show('claim');
-      if (t >= tap) {
-        const c = { id: 'e4a1', ts: Date.now(), road, usd: +usd(road), stock: 'AAPLx', km: road / CFG.ROAD_PER_KM, sent: new Date().toISOString(), paid: null, runs: [] };
-        S.claims = [c]; renderClaim();
-        const b = $('btn-claim'); b.disabled = true; b.className = 'cta-big done'; b.textContent = 'Claim sent ✓  ·  ' + usd(road) + ' USDG of AAPLx';
-        if (t < tap + 0.12) b.style.transform = 'scale(.97)';
-      } else if (t > tap - 0.1) $('btn-claim').style.transform = 'scale(.97)';
+    const synth = (km, sec, seed) => { // deterministic synthetic 1 Hz track
+      let lat = 45.9235 + seed * 0.004, lon = 6.8695, head = seed, pts = []; const v = km * 1000 / sec;
+      for (let t = 0; t <= sec; t++) { head += Math.sin(t / 60 + seed) * 0.03 + Math.cos(t / 23) * 0.02; const vv = v * (1 + Math.sin(t / 90) * 0.15); lat += Math.cos(head) * vv / 111320; lon += Math.sin(head) * vv / (111320 * Math.cos(lat * Math.PI / 180)); pts.push([t, +lat.toFixed(6), +lon.toFixed(6), 5 + Math.round(rnd() * 5), Math.round((1200 + Math.sin(t / 300 + seed) * 60 + t / 40) * 10) / 10]); }
+      return pts;
+    };
+    const seed = () => {
+      const now = Date.now(); S.runs = []; rng = 7;
+      [[8.4, 3060, 1.0], [5.2, 1780, 0.94], [10.1, 3400, 1.0], [6.0, 2100, 0.72]].forEach(([km, sec, qual], i) => {
+        const st = new Date(now - (i + 1) * 2 * 864e5).setHours(8, 12, 0, 0);
+        S.runs.push({ id: 'r' + i + 'abc', start: st, end: st + sec * 1000, durS: sec, movingS: sec - 60, km, pts: sec, segs: sec - 10, teleports: 0, gapS: 0, maxGap: 0, steps: Math.round(sec * 2.8), motion: true, elev: 120 + i * 40, sim: false, claim: i === 3 ? 'c1d2e3f4' : null,
+          checks: { gps: { s: 1, note: sec + ' fixes, no teleport' }, pace: { s: 1, note: '5:40 /km, human' }, cad: { s: 1, note: '168 spm, human' }, hist: { s: qual, note: qual < 1 ? 'Much faster than your usual pace' : 'In line with your usual pace' } },
+          quality: qual, road: Math.round(km * 100 * qual), track: synth(km, sec, i + 1) });
+      });
+      S.runs.reverse();
+      S.claims = [{ id: 'c1d2e3f4', ts: now - 6 * 864e5, wallet: S.wallet, road: 432, usd: 4.32, stock: 'AAPLx', km: 6.0, runIds: ['r3abc'], paid: { tx: '0x9c4e0000000000000000000000000000000000000000000000000000000071a1', paid: '2026-09-01', qty: '0.0212 AAPLx' }, sent: 'x', hash: 'abcd1234abcd1234', runs: [{ id: 'r3abc', km: 6, road: 432 }] }];
+    };
+    const st = { started: false, n: 0 };
+    function shotRun(t) {
+      const speed = parseFloat(q.get('speed') || '120');
+      if (!st.started) {
+        st.started = true; seed(); rng = 11; resetRun(); R.sim = true; R.motion = true;
+        $('r-title').textContent = 'Morning run'; $('r-note').textContent = 'Keep the screen on and the app in front. The proof is recorded only while the app is open.';
+        show('run'); startLiveMaps(); liveMaps.forEach(m => { m.follow = false; });
+        st.t = Date.now(); st.lat = 45.9235; st.lon = 6.8695; st.head = 0.4;
+      }
+      const N = Math.floor(t * speed);
+      while (st.n < N) {
+        const n = ++st.n; st.t += 1000; st.head += (rnd() - 0.5) * 0.25 + Math.sin(n / 90) * 0.04;
+        const v = 2.7 + Math.sin(n / 40) * 0.3;
+        st.lat += Math.cos(st.head) * v / 111320; st.lon += Math.sin(st.head) * v / (111320 * Math.cos(st.lat * Math.PI / 180));
+        onFix({ timestamp: st.t, coords: { latitude: st.lat + (rnd() - .5) * 2e-5, longitude: st.lon + (rnd() - .5) * 2e-5, accuracy: 5 + rnd() * 6, altitude: 1200 + Math.sin(n / 200) * 40 } });
+        R.steps += rnd() < 0.85 ? 3 : 2;
+      }
+      R.simN = st.n; updateRunUI();
+      $('r-cad').textContent = st.n > 5 ? String(Math.round(R.steps / Math.max(1, R.movingS / 60))) : '–';
+      if (liveMaps.length && st.n && !st.view) { st.view = true; liveMaps.forEach(m => m.map.setView([45.9265, 6.8735], 15, { animate: false })); }
     }
+    function shotRender(t) {
+      if (shot === 'verify') {
+        const km = parseFloat(q.get('km') || '8.2'), run = { km, quality: 1, road: Math.round(km * CFG.ROAD_PER_KM), sim: false, checks: { gps: { s: 1, note: Math.round(km * 340) + ' fixes, no teleport' }, pace: { s: 1, note: '5:24 /km, human' }, cad: { s: 1, note: '172 spm, human' }, hist: { s: 1, note: 'In line with your usual pace' } } };
+        if (cur !== 'verify') show('verify');
+        $('y-title').textContent = 'Run · ' + km.toFixed(2) + ' km'; $('y-km').textContent = km.toFixed(2); $('y-rpk').textContent = CFG.ROAD_PER_KM;
+        const lis = [...$('y-checks').querySelectorAll('li')];
+        lis.forEach((li, k) => { const on = t > 0.2 + k * 0.28, c = run.checks[li.dataset.k]; li.className = on ? 'on ok' : ''; li.querySelector('em').textContent = on ? c.note : ''; li.querySelector('i').textContent = ''; });
+        const u = ease((t - 1.35) / 0.75), done = t > 1.35;
+        $('y-ringfg').style.strokeDashoffset = 327 * (1 - u); $('y-pct').textContent = Math.round(100 * u) + '%'; $('y-q').textContent = u.toFixed(2); $('y-road').textContent = fmtInt(run.road * u);
+        const stc = $('y-state'); stc.className = 'chip ' + (done ? 'ok' : ''); stc.querySelector('span').textContent = done ? 'Verified ✓' : 'Verifying';
+      } else if (shot === 'claim') {
+        const road = parseInt(q.get('road') || '2140');
+        if (!st.started) { st.started = true; S.runs = [{ id: 'shot1', start: Date.now() - 3600e3, km: road / CFG.ROAD_PER_KM, road, quality: 1, sim: false, claim: null, movingS: 1, durS: 1, pts: 1 }]; }
+        S.claims = []; show('claim');
+        const b = $('btn-claim'); b.style.transform = '';
+        if (t >= tap) {
+          const c = { id: 'e4a1', ts: Date.now(), road, usd: +usd(road), stock: 'AAPLx', km: road / CFG.ROAD_PER_KM, sent: new Date().toISOString(), paid: null, runs: [] };
+          S.claims = [c]; renderClaim();
+          b.disabled = true; b.className = 'cta-big done'; b.textContent = 'Claim sent ✓  ·  ' + usd(road) + ' USDG of AAPLx';
+          if (t < tap + 0.12) b.style.transform = 'scale(.97)';
+        } else if (t > tap - 0.1) b.style.transform = 'scale(.97)';
+      } else if (shot === 'home') { if (!st.started) { st.started = true; seed(); show('home'); } }
+      else if (shot === 'portfolio') { if (!st.started) { st.started = true; seed(); show('portfolio'); } }
+      else if (shot === 'detail') { if (!st.started) { st.started = true; seed(); show('home'); openRun(S.runs[S.runs.length - 1].id); setTimeout(() => { if (dmap && dPts) { dmap.invalidateSize(); dmap.fitBounds(L.latLngBounds(dPts.map(p => [p.lat, p.lon])), { padding: [24, 24] }); } }, 400); } const side = $('side'); side.scrollTop = t < 1.2 ? 0 : Math.round(ease((t - 1.2) / 3.2) * 760); }
+      else if (shot === 'run') shotRun(t);
+    }
+    window.__shotSet = shotRender;
+    shotRender(parseFloat(q.get('t') || '0'));
   }
-  addEventListener('resize', () => { if (dmap) dmap.invalidateSize(); liveMaps.forEach(m => m.map.invalidateSize()); });
-  if (isWide() && S.runs.length) renderDetail(S.runs[S.runs.length - 1]);
-  if (views.includes(q.get('v'))) show(q.get('v'));
-  if (q.get('run')) openRun(q.get('run'));   // ?run=<id> opens a run's detail   // ?v=claim opens a tab directly (tests, links)
-  addEventListener('beforeunload', e => { if (R.active) { e.preventDefault(); e.returnValue = ''; } });
 })();
 </script>
 </body>
