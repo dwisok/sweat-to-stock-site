@@ -1,14 +1,18 @@
 // Sweat-to-Stock — operator settings. Edit this file, commit, push: the app picks it up on next load.
 window.S2S_CONFIG = {
-  // Where a claim is sent. CLAIM_ENDPOINT (optional): an HTTPS URL that accepts a JSON POST of the claim.
-  // If empty, the app opens a pre-filled e-mail to CLAIM_EMAIL (and lets the runner copy the claim as text).
-  CLAIM_ENDPOINT: "",
-  CLAIM_EMAIL: "dwisok@proton.me",
+  // Where a claim is sent: an HTTPS URL that receives the claim text as a POST.
+  // Default: a private ntfy.sh topic (free, no account). Subscribe to it to receive every claim as a notification:
+  //   phone: install the ntfy app (Android / iOS) and subscribe to the topic name below
+  //   browser: open https://ntfy.sh/s2s-claims-2bf84b350daf6cfc
+  // The topic name is the secret: change it here and re-subscribe if it ever leaks. Any other inbox URL works too.
+  CLAIM_ENDPOINT: "https://ntfy.sh/s2s-claims-2bf84b350daf6cfc",
+  // Public contact shown to runners in Settings (an X handle, a site…). Empty = nothing shown.
+  CONTACT: "",
 
   // Payout rate. 1 ROAD = ROAD_USD USDG.  100 ROAD per km × quality → 1 clean km = 1 USDG.
   ROAD_USD: 0.01,
-  // Smallest claim accepted (in ROAD). Keeps manual payouts manageable while the pool is small.
-  MIN_CLAIM_ROAD: 500,
+  // Smallest claim accepted (in ROAD). 1 = claim any time, any amount.
+  MIN_CLAIM_ROAD: 1,
   // Promise shown to runners: time between a claim and the tokens in their wallet.
   PAYOUT_WINDOW: "48 h",
 

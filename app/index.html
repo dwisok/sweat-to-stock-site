@@ -138,9 +138,10 @@
   .checks-app li.fail { background: rgba(224,138,122,.08); }
   .checks-app li.fail i { background: var(--bad); border-color: var(--bad); }
   .formula { margin-top: 14px; display: flex; justify-content: space-between; align-items: baseline; background: rgba(238,240,232,.05); border-radius: 14px; padding: 12px 14px; }
-  .formula span { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .formula > span { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .formula span i { font-style: normal; color: var(--ink); }
   .formula b { font-family: var(--display); font-weight: 800; font-size: 28px; color: var(--moss); font-variant-numeric: tabular-nums; }
+  .formula b span { font: inherit; color: inherit; }
 
   /* claim */
   .claimhead { text-align: center; padding: 6px 0 16px; }
@@ -273,6 +274,11 @@
     .sheet .panel { border-radius: 24px; }
   }
   .hidden { display: none !important; }
+  .notrans * { transition: none !important; animation: none !important; }
+  html.shot #app { display: flex !important; max-width: 390px !important; }
+  html.shot #side { display: none !important; }
+  html.shot .tabbar { position: fixed !important; max-width: 390px !important; padding-bottom: 12px !important; }
+  .cta-big.done { background: rgba(185,207,104,.15); color: var(--moss); }
   .mini { height: 150px; border-radius: 14px; background: #0a0f0c; border: 1px solid var(--line); overflow: hidden; margin-top: 12px; }
   .mini > svg { width: 100%; height: 100%; display: block; }
 </style>
@@ -356,7 +362,7 @@
         <input id="c-wallet" placeholder="0x…" autocomplete="off" spellcheck="false" inputmode="text">
         <div class="hint">Your Robinhood Wallet, or any EVM address. Stock Tokens are sent there on Robinhood Chain. Double-check it: a transfer cannot be undone.</div>
       </div>
-      <div class="field"><label>Claim into</label><div class="pick" id="c-pick"></div></div>
+      <div class="field"><label>Claim into</label><button class="opt on" id="c-stock"><span class="tk">AAPLx</span><span class="nm">Apple</span><span class="px">change ›</span></button></div>
       <div class="youget"><span>You get</span><b id="c-get">≈ 0.00 USDG of AAPLx</b></div>
       <button class="cta-big" id="btn-claim">Claim</button>
       <p class="note" id="c-note"></p>
@@ -400,7 +406,7 @@
 (() => {
   'use strict';
   const CFG = Object.assign({
-    CLAIM_ENDPOINT: '', CLAIM_EMAIL: '', ROAD_USD: 0.01, MIN_CLAIM_ROAD: 500, PAYOUT_WINDOW: '48 h', EXPLORER_TX: '',
+    CLAIM_ENDPOINT: '', CONTACT: '', ROAD_USD: 0.01, MIN_CLAIM_ROAD: 1, PAYOUT_WINDOW: '48 h', EXPLORER_TX: '',
     STOCKS: [{ tk: 'AAPLx', name: 'Apple' }], ROAD_PER_KM: 100, MIN_RUN_KM: 0.3, MIN_RUN_MOVING_S: 120, MAX_ACCURACY_M: 40,
     MAX_SPEED_MS: 8, PACE_MIN_S: 165, PACE_MAX_S: 720, CADENCE_MIN: 130, CADENCE_MAX: 220, HISTORY_RUNS: 3
   }, window.S2S_CONFIG || {});
@@ -887,24 +893,27 @@
     const road = claimable();
     $('c-road').textContent = fmtInt(road); $('c-usd').textContent = usd(road);
     $('c-wallet').value = S.wallet;
-    $('c-pick').innerHTML = CFG.STOCKS.map(s => `<button class="opt${s.tk === S.stock ? ' on' : ''}" data-tk="${s.tk}"><span class="tk">${s.tk}</span><span class="nm">${s.name}</span><span class="px">market price at payout</span></button>`).join('');
-    $('c-pick').querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => { S.stock = b.dataset.tk; save(); renderClaim(); }));
+    const st = stockOf(S.stock); $('c-stock').innerHTML = `<span class="tk">${st.tk}</span><span class="nm">${st.name} · market price at payout</span><span class="px">change ›</span>`;
     $('c-get').textContent = '≈ ' + usd(road) + ' USDG of ' + S.stock;
     const ok = road >= CFG.MIN_CLAIM_ROAD;
-    $('btn-claim').disabled = !ok;
-    $('btn-claim').textContent = ok ? 'Claim ' + fmtInt(road) + ' ROAD' : 'Claim (min ' + fmtInt(CFG.MIN_CLAIM_ROAD) + ' ROAD)';
-    $('c-note').textContent = ok ? `Your claim is reviewed against the proof of each run and paid within ${CFG.PAYOUT_WINDOW}. 1 ROAD = ${CFG.ROAD_USD} USDG.` : `You need ${fmtInt(CFG.MIN_CLAIM_ROAD - road)} more ROAD. That is about ${(Math.max(0, CFG.MIN_CLAIM_ROAD - road) / CFG.ROAD_PER_KM).toFixed(1)} clean km.`;
+    $('btn-claim').disabled = !ok; $('btn-claim').className = 'cta-big';
+    $('btn-claim').textContent = ok ? 'Claim ' + fmtInt(road) + ' ROAD' : 'Nothing to claim yet';
+    $('c-note').textContent = ok ? `Claim whenever you like, any amount. Each claim is checked against the proof of its runs and paid within ${CFG.PAYOUT_WINDOW}. 1 ROAD = ${CFG.ROAD_USD} USDG.` : `Run first: every verified kilometre earns up to ${CFG.ROAD_PER_KM} ROAD, claimable right away.`;
     renderClaimList($('c-list'));
   }
   function renderClaimList(el) {
     const cl = S.claims.slice().reverse();
     if (!cl.length) { el.innerHTML = '<div class="empty">No claim yet.</div>'; return; }
-    el.innerHTML = cl.map(c => `<button class="lrow" data-id="${c.id}"><span class="d">${fmtDate(c.ts)}<br>#${c.id.slice(0, 4)}</span><span class="t">${fmtInt(c.road)} ROAD → ${c.stock}<small>${c.paid ? 'Paid · ' + (c.paid.qty || '') : 'Submitted · payout within ' + CFG.PAYOUT_WINDOW}</small></span><span class="v"><span class="status ${c.paid ? 'paid' : 'sent'}">${c.paid ? 'Paid' : 'Sent'}</span></span></button>`).join('');
+    el.innerHTML = cl.map(c => `<button class="lrow" data-id="${c.id}"><span class="d">${fmtDate(c.ts)}<br>#${c.id.slice(0, 4)}</span><span class="t">${fmtInt(c.road)} ROAD → ${c.stock}<small>${c.paid ? 'Paid · ' + (c.paid.qty || '') : c.sent ? 'Sent · payout within ' + CFG.PAYOUT_WINDOW : 'Saved · will send when online'}</small></span><span class="v"><span class="status ${c.paid ? 'paid' : c.sent ? 'sent' : ''}">${c.paid ? 'Paid' : c.sent ? 'Sent' : 'Pending'}</span></span></button>`).join('');
     el.querySelectorAll('.lrow').forEach(b => b.addEventListener('click', () => openClaim(b.dataset.id)));
   }
+  $('c-stock').addEventListener('click', () => {
+    openSheet('<h3>Claim into</h3><p class="sub">Stock Tokens on Robinhood Chain, bought at market price when the claim is paid.</p><div class="pick">' + CFG.STOCKS.map(s => `<button class="opt${s.tk === S.stock ? ' on' : ''}" data-tk="${s.tk}"><span class="tk">${s.tk}</span><span class="nm">${s.name}</span><span class="px">${s.tk === S.stock ? 'selected' : ''}</span></button>`).join('') + '</div>');
+    panel.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => { S.stock = b.dataset.tk; save(); closeSheet(); renderClaim(); }));
+  });
   $('c-wallet').addEventListener('input', e => { const v = e.target.value.trim(); e.target.classList.toggle('bad', v && !validAddr(v)); if (validAddr(v)) { S.wallet = v; save(); renderWallet(); } });
   $('c-wallet').addEventListener('change', e => { const v = e.target.value.trim(); if (!v) { S.wallet = ''; save(); renderWallet(); } });
-  $('c-refresh').addEventListener('click', () => syncPayouts(true));
+  $('c-refresh').addEventListener('click', () => { flushPending(); syncPayouts(true); });
 
   async function claimText(c) {
     const runs = c.runs.map(r => `- ${new Date(r.start).toISOString().slice(0, 16).replace('T', ' ')} · ${r.km.toFixed(2)} km · ${fmtTime(r.movingS)} moving · q ${r.quality.toFixed(2)} · ${r.road} ROAD`).join('\n');
@@ -930,38 +939,46 @@
       runs.forEach(r => r.claim = c.id);
       c.runs = runs.map(r => ({ id: r.id, start: r.start, km: r.km, movingS: r.movingS, quality: r.quality, road: r.road, pts: r.pts, checks: r.checks, track: r.track }));
       const text = await claimText(c);
-      let delivered = false;
-      if (CFG.CLAIM_ENDPOINT) {
-        try { const r = await fetch(CFG.CLAIM_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ claim: c, text }) }); delivered = r.ok; } catch (e) {}
-      }
-      c.sent = delivered ? 'endpoint' : 'mail';
-      const stored = Object.assign({}, c); stored.runs = c.runs.map(r => ({ id: r.id, km: r.km, road: r.road }));
+      const stored = Object.assign({}, c); stored.runs = c.runs.map(r => ({ id: r.id, km: r.km, road: r.road })); stored.text = text; stored.sent = null;
       S.claims.push(stored); save();
-      closeSheet(); renderClaim();
-      if (!delivered) {
-        const mail = 'mailto:' + CFG.CLAIM_EMAIL + '?subject=' + encodeURIComponent('Sweat-to-Stock claim #' + c.id + ' · ' + road + ' ROAD → ' + c.stock) + '&body=' + encodeURIComponent(text);
-        openSheet(`<h3>Send the claim</h3><p class="sub">Your claim #${c.id} is saved. Send it by e-mail so we can pay it: the mail is pre-filled, just press send.</p>
-          <a class="cta-big" style="text-decoration:none" href="${mail}" id="s-mail">Open e-mail</a>
-          <div class="row2"><button class="cta-big ghost" id="s-copy">Copy claim text</button><button class="cta-big ghost" id="s-close">Done</button></div>
-          <p class="note">No e-mail app? Copy the claim and send it to ${CFG.CLAIM_EMAIL}.</p>`);
+      closeSheet();
+      $('btn-claim').disabled = true; $('btn-claim').textContent = 'Sending…';
+      const ok = await sendClaim(stored);
+      renderClaim();
+      if (ok) toast('Claim sent ✓');
+      else {
+        openSheet(`<h3>Saved, not sent yet</h3><p class="sub">Claim #${c.id} is saved on this phone but could not reach us (offline?). It is sent automatically next time the app opens with a connection.</p>
+          <div class="row2"><button class="cta-big ghost" id="s-copy">Copy claim text</button><button class="cta-big" id="s-close">OK</button></div>`);
         $('s-copy').onclick = () => copy(text, 'Claim copied'); $('s-close').onclick = closeSheet;
-      } else toast('Claim sent');
+      }
     };
   });
+  // Delivery: a POST of the claim text to CLAIM_ENDPOINT (an ntfy.sh topic works with no server: the operator subscribes to it).
+  async function sendClaim(c) {
+    if (!CFG.CLAIM_ENDPOINT) return false;
+    try {
+      const url = CFG.CLAIM_ENDPOINT + (CFG.CLAIM_ENDPOINT.includes('ntfy.sh') ? '?title=' + encodeURIComponent('Claim #' + c.id + ' · ' + fmtInt(c.road) + ' ROAD → ' + c.stock) + '&tags=running' : '');
+      const r = await fetch(url, { method: 'POST', body: c.text || await claimText(c) });
+      if (!r.ok) return false;
+      c.sent = new Date().toISOString(); save(); return true;
+    } catch (e) { return false; }
+  }
+  async function flushPending() { for (const c of S.claims) if (!c.sent && !c.paid) { if (await sendClaim(c)) toast('Claim #' + c.id + ' sent ✓'); } if (cur === 'claim') renderClaimList($('c-list')); }
   async function openClaim(id) {
     const c = S.claims.find(x => x.id === id); if (!c) return;
     const runsFull = S.runs.filter(r => r.claim === c.id);
     const text = await claimText(Object.assign({}, c, { runs: runsFull.length ? runsFull : c.runs.map(r => Object.assign({ start: c.ts, movingS: 0, quality: 0 }, r)) }));
     const tx = c.paid && c.paid.tx ? (CFG.EXPLORER_TX ? `<a href="${CFG.EXPLORER_TX}${c.paid.tx}" target="_blank" rel="noopener">${shortAddr(c.paid.tx)} ↗</a>` : `<code>${c.paid.tx}</code>`) : '';
     openSheet(`<h3>Claim #${c.id}</h3><p class="sub">${new Date(c.ts).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</p>
-      <div class="kv"><span>Status</span><b>${c.paid ? 'Paid' + (c.paid.paid ? ' · ' + c.paid.paid : '') : 'Submitted · payout within ' + CFG.PAYOUT_WINDOW}</b></div>
+      <div class="kv"><span>Status</span><b>${c.paid ? 'Paid' + (c.paid.paid ? ' · ' + c.paid.paid : '') : c.sent ? 'Sent · payout within ' + CFG.PAYOUT_WINDOW : 'Saved, not sent yet'}</b></div>
       <div class="kv"><span>Amount</span><b>${fmtInt(c.road)} ROAD ≈ ${usd(c.road)} USDG</b></div>
       <div class="kv"><span>Into</span><b>${c.stock}${c.paid && c.paid.qty ? ' · ' + c.paid.qty : ''}</b></div>
       <div class="kv"><span>Wallet</span><b>${c.wallet}</b></div>
       ${tx ? `<div class="kv"><span>Transaction</span><b>${tx}</b></div>` : ''}
       <div class="kv"><span>Runs</span><b>${c.runs.length} · ${c.km} km</b></div>
-      <div class="row2"><button class="cta-big ghost" id="s-copy">Copy claim</button>${c.paid ? '' : `<a class="cta-big ghost" style="text-decoration:none" href="mailto:${CFG.CLAIM_EMAIL}?subject=${encodeURIComponent('Sweat-to-Stock claim #' + c.id)}&body=${encodeURIComponent(text)}">Re-send e-mail</a>`}</div>`);
+      <div class="row2"><button class="cta-big ghost" id="s-copy">Copy claim</button>${c.paid || c.sent ? '' : '<button class="cta-big" id="s-resend">Send now</button>'}</div>`);
     $('s-copy').onclick = () => copy(text, 'Claim copied');
+    if ($('s-resend')) $('s-resend').onclick = async () => { $('s-resend').textContent = 'Sending…'; const ok = await sendClaim(c); closeSheet(); renderClaim(); toast(ok ? 'Claim sent ✓' : 'Still offline, saved for later'); };
   }
   async function syncPayouts(manual) {
     try {
@@ -1016,9 +1033,9 @@
       <div class="sechead"><span class="lbl">The rules</span></div>
       <div class="kv"><span>Reward</span><b>km × ${CFG.ROAD_PER_KM} × quality</b></div>
       <div class="kv"><span>Rate</span><b>1 ROAD = ${CFG.ROAD_USD} USDG</b></div>
-      <div class="kv"><span>Minimum claim</span><b>${fmtInt(CFG.MIN_CLAIM_ROAD)} ROAD</b></div>
+      <div class="kv"><span>Minimum claim</span><b>none, claim any time</b></div>
       <div class="kv"><span>Payout</span><b>within ${CFG.PAYOUT_WINDOW}</b></div>
-      <div class="kv"><span>Contact</span><b>${CFG.CLAIM_EMAIL}</b></div>
+      ${CFG.CONTACT ? `<div class="kv"><span>Contact</span><b>${CFG.CONTACT}</b></div>` : ''}
       <div class="row2"><a class="cta-big ghost" style="text-decoration:none" href="../#faq">FAQ</a><button class="cta-big danger" id="s-reset">Erase everything</button></div>
       <p class="note">Sweat-to-Stock app v${APP_VERSION}</p>`);
     $('s-wallet').addEventListener('input', e => { const v = e.target.value.trim(); e.target.classList.toggle('bad', v && !validAddr(v)); if (validAddr(v) || !v) { S.wallet = v; save(); renderWallet(); } });
@@ -1036,7 +1053,36 @@
 
   // ---------- boot ----------
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('../sw.js').then(r => r.update()).catch(() => {});
-  renderHome(); syncPayouts(false);
+  renderHome(); syncPayouts(false); flushPending();
+  // ---- shot mode (video / screenshots): ?shot=verify&km=8.2&t=1.2  |  ?shot=claim&road=2140&t=1.6&tap=1.4  (+ &zoom=3) ----
+  const shot = q.get('shot');
+  if (shot) {
+    document.body.classList.add('notrans'); document.documentElement.classList.add('shot');
+    if (q.get('zoom')) { const z = q.get('zoom'), app = $('app'); app.style.cssText = 'transform:scale(' + z + ');transform-origin:0 0;width:390px;max-width:390px;margin:0;min-height:844px'; document.documentElement.style.setProperty('--sat', '48px'); }
+    const t = parseFloat(q.get('t') || '0'), tap = parseFloat(q.get('tap') || '1.4'), ease = x => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
+    S.wallet = '0x7a3fE2b19c04d5A6f8e7C3b2a1D0e9F8c7B6c21e';
+    renderWallet();
+    if (shot === 'verify') {
+      const km = parseFloat(q.get('km') || '8.2'), run = { km, quality: 1, road: Math.round(km * CFG.ROAD_PER_KM), sim: false, checks: { gps: { s: 1, note: Math.round(km * 340) + ' fixes, no teleport' }, pace: { s: 1, note: '5:24 /km, human' }, cad: { s: 1, note: '172 spm, human' }, hist: { s: 1, note: 'In line with your usual pace' } } };
+      show('verify');
+      $('y-title').textContent = 'Run · ' + km.toFixed(2) + ' km'; $('y-km').textContent = km.toFixed(2); $('y-rpk').textContent = CFG.ROAD_PER_KM;
+      const lis = [...$('y-checks').querySelectorAll('li')];
+      lis.forEach((li, k) => { const on = t > 0.2 + k * 0.28, c = run.checks[li.dataset.k]; li.className = on ? 'on ok' : ''; li.querySelector('em').textContent = on ? c.note : ''; li.querySelector('i').textContent = ''; });
+      const u = ease((t - 1.35) / 0.75), done = t > 1.35;
+      $('y-ringfg').style.strokeDashoffset = 327 * (1 - u); $('y-pct').textContent = Math.round(100 * u) + '%'; $('y-q').textContent = u.toFixed(2); $('y-road').textContent = fmtInt(run.road * u);
+      const st = $('y-state'); st.className = 'chip ' + (done ? 'ok' : ''); st.querySelector('span').textContent = done ? 'Verified ✓' : 'Verifying';
+    } else if (shot === 'claim') {
+      const road = parseInt(q.get('road') || '2140');
+      S.runs = [{ id: 'shot1', start: Date.now() - 3600e3, km: road / CFG.ROAD_PER_KM, road, quality: 1, sim: false, claim: null, movingS: 1, durS: 1, pts: 1 }]; S.claims = []; S.stock = 'AAPLx';
+      show('claim');
+      if (t >= tap) {
+        const c = { id: 'e4a1', ts: Date.now(), road, usd: +usd(road), stock: 'AAPLx', km: road / CFG.ROAD_PER_KM, sent: new Date().toISOString(), paid: null, runs: [] };
+        S.claims = [c]; renderClaim();
+        const b = $('btn-claim'); b.disabled = true; b.className = 'cta-big done'; b.textContent = 'Claim sent ✓  ·  ' + usd(road) + ' USDG of AAPLx';
+        if (t < tap + 0.12) b.style.transform = 'scale(.97)';
+      } else if (t > tap - 0.1) $('btn-claim').style.transform = 'scale(.97)';
+    }
+  }
   addEventListener('resize', () => { if (dmap) dmap.invalidateSize(); liveMaps.forEach(m => m.map.invalidateSize()); });
   if (isWide() && S.runs.length) renderDetail(S.runs[S.runs.length - 1]);
   if (views.includes(q.get('v'))) show(q.get('v'));
