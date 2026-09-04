@@ -54,6 +54,11 @@
   .nav .brand { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; text-shadow: 0 1px 14px rgba(0,0,0,.7); }
   .nav a.cta { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; text-decoration: none; border-radius: 999px; padding: 11px 18px; background: var(--moss); color: #0c110f; box-shadow: 0 8px 24px -8px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.35); transition: transform .15s ease, background .15s ease; }
   .nav a.cta::after { content: "→"; font-weight: 600; transition: transform .15s ease; }
+  .nav .nav-actions { display: flex; gap: 10px; align-items: center; }
+  .nav a.cta.ghost { background: rgba(12,17,15,.55); color: #fff; border: 1px solid rgba(255,255,255,.35); backdrop-filter: blur(8px); box-shadow: none; }
+  .nav a.cta.ghost::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--moss); box-shadow: 0 0 0 4px rgba(185,207,104,.2); }
+  .nav a.cta.ghost::after { content: none; }
+  .nav a.cta.ghost:hover { background: rgba(12,17,15,.8); border-color: #fff; }
   .nav a.cta:hover { background: #c9dd7c; transform: translateY(-1px); }
   .nav a.cta:hover::after { transform: translateX(3px); }
 
@@ -459,7 +464,7 @@
 
 <nav class="nav">
   <a class="brand" href="#">Sweat-to-Stock</a>
-  <a class="cta" href="app/">Open the app</a>
+  <div class="nav-actions"><a class="cta ghost" href="treasury.html">Vault</a><a class="cta" href="app/">Open the app</a></div>
 </nav>
 
 <section class="scrub" id="scrub" aria-label="Intro">
@@ -485,7 +490,7 @@
       <p>Every verified kilometre earns ROAD. Claim it into stock tokens on Robinhood Chain, straight into your wallet. No points to hoard, no game to play.</p>
       <div class="actions">
         <a class="btn primary" href="app/">Open the app</a>
-        <a class="btn ghost" href="#how">How it works</a>
+        <a class="btn ghost" href="treasury.html">See the vault</a>
       </div>
     </div>
 
