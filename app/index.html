@@ -16,6 +16,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src="config.js"></script>
 <style>
   :root {
@@ -104,7 +106,7 @@
   .bigstat span { color: var(--muted); font-size: 18px; }
   .stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 18px 0 14px; }
   .map { flex: 1; min-height: 200px; border-radius: 18px; background: #0a0f0c; border: 1px solid var(--line); overflow: hidden; position: relative; }
-  .map svg { width: 100%; height: 100%; display: block; }
+  .map > svg { width: 100%; height: 100%; display: block; }
   .map .grid { stroke: rgba(238,240,232,.06); stroke-width: 1; fill: none; }
   .map .route { fill: none; stroke: var(--moss); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 6px rgba(185,207,104,.5)); vector-effect: non-scaling-stroke; }
   .map .dot { fill: #fff; stroke: var(--moss); stroke-width: 3; vector-effect: non-scaling-stroke; }
@@ -195,9 +197,84 @@
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
   .row2 .cta-big { margin: 0; padding: 14px; font-size: 15px; }
   code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: rgba(238,240,232,.08); padding: 2px 6px; border-radius: 6px; }
+
+  /* ---------- run detail panel (right column on desktop, full screen on mobile) ---------- */
+  #side { display: none; }
+  body.detail-open #side { display: block; position: fixed; inset: 0; z-index: 8; background: var(--bg); overflow: auto; -webkit-overflow-scrolling: touch; }
+  .detail { padding: calc(var(--sat) + 14px) 20px calc(var(--sab) + 40px); max-width: 1100px; }
+  .dhead { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .dhead .back { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--moss); padding: 8px 0; }
+  .dhead h2 { margin: 0; font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 30px; line-height: 1; }
+  .dhead .when { font-size: 13px; color: var(--muted); width: 100%; }
+  .dhead .when b { color: var(--ink); font-weight: 600; }
+  .lmap { position: relative; height: 46vh; min-height: 300px; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: #0a0f0c; z-index: 0; }
+  .lmap .leaflet-container { width: 100%; height: 100%; background: #0a0f0c; font-family: var(--body); }
+  .leaflet-layer.dark { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.6); }
+  .leaflet-control-attribution { background: rgba(12,17,15,.7) !important; color: var(--faint) !important; font-size: 10px !important; }
+  .leaflet-control-attribution a { color: var(--muted) !important; }
+  .leaflet-bar a { background: var(--bg-2) !important; color: var(--ink) !important; border-color: var(--line) !important; }
+  .leaflet-control-layers { background: var(--bg-2) !important; color: var(--ink) !important; border: 1px solid var(--line) !important; border-radius: 12px !important; }
+  .leaflet-control-layers-toggle { filter: invert(1); }
+  .kmlabel { background: var(--bg); color: var(--ink); border: 1.5px solid var(--moss); border-radius: 50%; width: 22px !important; height: 22px !important; text-align: center; font: 700 11px/19px var(--body); }
+  .kmlabel.start { background: var(--moss); color: #0c110f; border-color: var(--moss); }
+  .kmlabel.end { background: #0c110f; color: #fff; border-color: #fff; }
+  .mapnote { position: absolute; left: 12px; bottom: 22px; z-index: 500; font-size: 11px; color: var(--ink); background: rgba(12,17,15,.75); padding: 6px 10px; border-radius: 8px; pointer-events: none; display: none; }
+  .mapnote.on { display: block; }
+  .mapoff { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 14px; text-align: center; padding: 20px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 14px; }
+  .stats div { background: rgba(238,240,232,.05); border-radius: 14px; padding: 12px 14px; }
+  .stats b { display: block; font-family: var(--display); font-weight: 700; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stats b small { font-size: 13px; color: var(--muted); font-weight: 600; margin-left: 3px; font-family: var(--body); }
+  .stats span { font-size: 11px; color: var(--faint); letter-spacing: .08em; text-transform: uppercase; }
+  .dgrid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 14px; }
+  .dcard { background: var(--bg-2); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; }
+  .dcard h4 { margin: 0 0 8px; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); font-weight: 600; display: flex; justify-content: space-between; }
+  .dcard h4 span { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .dchart { height: 130px; }
+  .dchart svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .dchart .line { fill: none; stroke: var(--moss); stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  .dchart .line.haze { stroke: var(--haze); }
+  .dchart .area { fill: rgba(185,207,104,.15); }
+  .dchart .area.haze { fill: rgba(207,221,232,.12); }
+  .dchart .cursor { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; display: none; }
+  .dchart .avg { stroke: rgba(238,240,232,.3); stroke-width: 1; stroke-dasharray: 2 4; vector-effect: non-scaling-stroke; }
+  .axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--faint); letter-spacing: .08em; text-transform: uppercase; margin-top: 4px; }
+  .splits { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .splits th { text-align: left; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); font-weight: 600; padding: 4px 6px 8px 0; }
+  .splits td { padding: 7px 6px 7px 0; border-top: 1px solid var(--line); }
+  .splits td.bar { width: 40%; }
+  .splits td.bar i { display: block; height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--moss-deep), var(--moss)); }
+  .splits td.n { color: var(--muted); }
+  .splits tr.best td { color: var(--moss); }
+  .dcheck div { display: grid; grid-template-columns: 1fr auto; gap: 8px; font-size: 13px; padding: 8px 0; border-top: 1px solid var(--line); align-items: center; }
+  .dcheck div:first-child { border-top: 0; }
+  .dcheck em { font-style: normal; color: var(--muted); display: block; font-size: 12px; }
+  .dcheck b { font-family: var(--display); font-weight: 800; font-size: 20px; color: var(--moss); }
+  .dcheck b.low { color: var(--sun); } .dcheck b.bad { color: var(--bad); }
+  .dactions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .dactions .btn { flex: 1 1 auto; text-align: center; }
+  .dactions .btn.danger { color: var(--bad); }
+  .side-empty { display: grid; place-items: center; height: 60vh; color: var(--faint); font-size: 14px; text-align: center; padding: 20px; }
+  .side-empty b { display: block; font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 28px; color: var(--muted); margin-bottom: 8px; }
+
+  @media (min-width: 960px) {
+    #app { max-width: 1440px; display: grid; grid-template-columns: 420px minmax(0, 1fr); grid-template-rows: auto 1fr auto; min-height: 100vh; }
+    .top { grid-column: 1 / -1; grid-row: 1; }
+    main { grid-column: 1; grid-row: 2; padding-bottom: 24px; }
+    .tabbar { position: sticky; grid-column: 1; grid-row: 3; max-width: none; margin: 0; padding-bottom: 14px; }
+    #side { display: block !important; grid-column: 2; grid-row: 2 / 4; border-left: 1px solid var(--line); }
+    body.detail-open #side { position: static; inset: auto; }
+    .detail { padding: 8px 28px 40px; }
+    .dhead .back { display: none; }
+    .lmap { height: 54vh; min-height: 380px; }
+    .dgrid { grid-template-columns: 1fr 1fr; }
+    .dgrid .wide { grid-column: 1 / -1; }
+    .sheet { align-items: center; }
+    .sheet .panel { border-radius: 24px; }
+  }
   .hidden { display: none !important; }
   .mini { height: 150px; border-radius: 14px; background: #0a0f0c; border: 1px solid var(--line); overflow: hidden; margin-top: 12px; }
-  .mini svg { width: 100%; height: 100%; display: block; }
+  .mini > svg { width: 100%; height: 100%; display: block; }
 </style>
 </head>
 <body>
@@ -238,13 +315,14 @@
       <div class="bigstat"><b id="r-km">0.00</b><span>km</span></div>
       <div class="stats3"><div><b id="r-pace">–:––</b><span>/km</span></div><div><b id="r-time">00:00</b><span>time</span></div><div><b id="r-cad">–</b><span>spm</span></div></div>
       <div class="map">
-        <svg id="r-map" viewBox="0 0 260 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <div id="r-lmap" style="position:absolute;inset:0;z-index:0"></div>
+        <svg id="r-map" viewBox="0 0 260 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true" style="position:relative;z-index:1">
           <path class="grid" d="M0 50H260M0 100H260M0 150H260M65 0V200M130 0V200M195 0V200"/>
           <polyline class="route" id="r-route" points=""/>
           <circle class="dot" id="r-dot" r="5" cx="-10" cy="-10"/>
         </svg>
         <div class="mapmsg" id="r-msg">Waiting for GPS…</div>
-        <span class="maptag">GPS <i id="r-acc">–</i> · <i id="r-pts">0</i> fixes · <i id="r-elev">+0 m</i></span>
+        <span class="maptag" style="z-index:2;background:rgba(12,17,15,.7);padding:4px 8px;border-radius:6px">GPS <i id="r-acc">–</i> · <i id="r-pts">0</i> fixes · <i id="r-elev">+0 m</i></span>
       </div>
       <div class="run-actions">
         <button class="cta-big ghost" id="btn-pause">Pause</button>
@@ -305,6 +383,8 @@
     </section>
   </main>
 
+  <aside id="side"><div class="detail" id="detail"><div class="side-empty"><b>Your route, in detail</b>Pick a run on the left. Start one and it draws here live.</div></div></aside>
+
   <nav class="tabbar" id="tabbar">
     <button data-v="home" class="on"><svg viewBox="0 0 24 24"><path d="M4 18 9 9l4 6 3-4 4 7"/></svg>Run</button>
     <button data-v="claim"><svg viewBox="0 0 24 24"><path d="M12 3v18M7 8h7a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h8"/></svg>Claim</button>
@@ -363,7 +443,9 @@
     document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
     $('tabbar').classList.toggle('hide', v === 'run' || v === 'verify');
     window.scrollTo(0, 0);
+    document.body.classList.remove('detail-open');
     if (v === 'home') renderHome(); else if (v === 'claim') renderClaim(); else if (v === 'portfolio') renderPortfolio();
+    if (isWide() && !dRun && !R.active) { const last = S.runs[S.runs.length - 1]; if (last) renderDetail(last); }
   }
   document.querySelectorAll('.tabbar button').forEach(b => b.addEventListener('click', () => show(b.dataset.v)));
 
@@ -473,7 +555,7 @@
     $('r-acc').textContent = R.acc == null ? '–' : '±' + Math.round(R.acc) + ' m';
     $('r-pts').textContent = R.pts.length;
     $('r-elev').textContent = '+' + Math.round(R.elevGain) + ' m';
-    if (R.pts.length) { $('r-msg').classList.add('hidden'); drawTrack($('r-map'), $('r-route'), $('r-dot'), R.pts); }
+    if (R.pts.length) { $('r-msg').classList.add('hidden'); if (liveMaps.length) updateLiveMaps(); else drawTrack($('r-map'), $('r-route'), $('r-dot'), R.pts); }
     else if (R.acc != null) $('r-msg').textContent = 'GPS ±' + Math.round(R.acc) + ' m · waiting for a good fix…';
   }
   function project(pts) {
@@ -498,11 +580,13 @@
     $('r-route').setAttribute('points', ''); $('r-msg').textContent = 'Waiting for GPS…'; $('r-msg').classList.remove('hidden');
     $('btn-pause').textContent = 'Pause';
     show('run'); updateRunUI();
+    startLiveMaps();
     await askMotion(); keepAwake();
     if (sim) simulate(speed || 20); else watchId = navigator.geolocation.watchPosition(onFix, onGeoErr, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
     timerId = setInterval(() => { if (R.active) { $('r-time').textContent = fmtTime(elapsed()); $('r-pace').textContent = fmtPace(currentPace()); if (R.motion) $('r-cad').textContent = cadenceNow(); } }, 1000);
   }
   function stopWatching() {
+    stopLiveMaps();
     if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
     clearInterval(timerId); timerId = null;
     if (simId) { clearInterval(simId); simId = null; }
@@ -552,11 +636,12 @@
     const v = verify(run, S.runs);
     run.checks = v.checks; run.quality = v.quality;
     run.road = run.sim ? 0 : Math.round(run.km * CFG.ROAD_PER_KM * run.quality);
-    // keep a light track for the map + proof (max 400 points)
-    const step = Math.max(1, Math.ceil(R.pts.length / 400));
-    run.track = R.pts.filter((p, i) => i % step === 0 || i === R.pts.length - 1).map(p => [Math.round((p.t - R.start) / 1000), +p.lat.toFixed(5), +p.lon.toFixed(5), Math.round(p.acc)]);
+    // full-precision track: every accepted fix (1 Hz), 6 decimals (~10 cm), altitude when the phone gives one. Max 3600 points.
+    const step = Math.max(1, Math.ceil(R.pts.length / 3600));
+    run.track = R.pts.filter((p, i) => i % step === 0 || i === R.pts.length - 1).map(p => [Math.round((p.t - R.start) / 1000), +p.lat.toFixed(6), +p.lon.toFixed(6), Math.round(p.acc), (typeof p.alt === 'number' && !isNaN(p.alt)) ? Math.round(p.alt * 10) / 10 : null]);
     S.runs.push(run); save();
     showVerify(run);
+    if (isWide()) renderDetail(run);
   }
   function showVerify(run) {
     show('verify');
@@ -607,23 +692,193 @@
 
   $('btn-start').addEventListener('click', () => startRun(false));
 
-  // ---------- run details ----------
+  // ---------- maps, route analysis and the run detail panel ----------
+  const hasL = typeof L !== 'undefined';
+  const isWide = () => matchMedia('(min-width: 960px)').matches;
+  function baseLayers() {
+    const osm = cls => L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, className: cls, attribution: '&copy; OpenStreetMap contributors' });
+    return {
+      'Dark': osm('dark'), 'Streets': osm(''),
+      'Terrain': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: '&copy; OpenTopoMap, OpenStreetMap contributors' }),
+      'Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri, Maxar, Earthstar Geographics' })
+    };
+  }
+  let mapStyle = 'Dark'; try { mapStyle = localStorage.getItem('s2s.map') || 'Dark'; } catch (e) {}
+  function makeMap(el, opts) {
+    const m = L.map(el, Object.assign({ zoomControl: true }, opts || {}));
+    const layers = baseLayers(); (layers[mapStyle] || layers['Dark']).addTo(m);
+    L.control.layers(layers, null, { position: 'topright' }).addTo(m);
+    m.on('baselayerchange', e => { mapStyle = e.name; try { localStorage.setItem('s2s.map', e.name); } catch (err) {} });
+    return m;
+  }
+  const kmIcon = (txt, cls) => L.divIcon({ className: 'kmlabel ' + (cls || ''), html: txt, iconSize: [22, 22], iconAnchor: [11, 11] });
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const hexToRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const paceColor = t => { const a = hexToRgb('#cfdde8'), b = hexToRgb('#b9cf68'); return 'rgb(' + a.map((v, i) => Math.round(lerp(v, b[i], t))).join(',') + ')'; };
+
+  const trackPts = run => (run.track || []).map(p => ({ t: p[0], lat: p[1], lon: p[2], acc: p[3], alt: p.length > 4 && p[4] != null ? p[4] : null }));
+  function analyse(pts) {
+    const n = pts.length, cum = new Array(n).fill(0), spd = new Array(n).fill(0);
+    for (let i = 1; i < n; i++) cum[i] = cum[i - 1] + hav(pts[i - 1], pts[i]);
+    for (let i = 0; i < n; i++) { let j = i; while (j > 0 && pts[i].t - pts[j].t < 10) j--; const dt = pts[i].t - pts[j].t, d = cum[i] - cum[j]; spd[i] = dt > 0 ? d / dt : 0; }
+    const splits = []; let k = 1, i0 = 0;
+    for (let i = 1; i < n; i++) if (cum[i] >= k * 1000) { splits.push({ km: k, len: 1, s: pts[i].t - pts[i0].t, alt: pts[i].alt != null && pts[i0].alt != null ? pts[i].alt - pts[i0].alt : null }); i0 = i; k++; }
+    const rest = n > 1 ? cum[n - 1] - (k - 1) * 1000 : 0;
+    if (rest > 50) splits.push({ km: k, len: rest / 1000, s: pts[n - 1].t - pts[i0].t, alt: pts[n - 1].alt != null && pts[i0].alt != null ? pts[n - 1].alt - pts[i0].alt : null });
+    let maxSpd = 0, accSum = 0, maxAlt = -Infinity, minAlt = Infinity, hasAlt = false;
+    for (let i = 0; i < n; i++) { if (spd[i] > maxSpd) maxSpd = spd[i]; accSum += pts[i].acc || 0; if (pts[i].alt != null) { hasAlt = true; if (pts[i].alt > maxAlt) maxAlt = pts[i].alt; if (pts[i].alt < minAlt) minAlt = pts[i].alt; } }
+    const full = splits.filter(x => x.len === 1); const best = full.length ? full.reduce((a, b) => a.s < b.s ? a : b) : null;
+    const sorted = spd.filter(v => v > 0).sort((a, b) => a - b), lo = sorted[Math.floor(sorted.length * 0.05)] || 0, hi = sorted[Math.floor(sorted.length * 0.95)] || 1;
+    return { n, cum, spd, splits, maxSpd, avgAcc: n ? accSum / n : 0, hasAlt, maxAlt, minAlt, best, lo, hi, total: n ? cum[n - 1] : 0 };
+  }
+
+  let dmap = null, dRun = null, dHover = null, dPts = null, dA = null;
+  const runTitle = r => r.sim ? 'Simulated run' : new Date(r.start).getHours() < 12 ? 'Morning run' : new Date(r.start).getHours() < 18 ? 'Afternoon run' : 'Evening run';
+  function drawRoute(map, pts, A, opts) {
+    const group = L.layerGroup().addTo(map);
+    if (pts.length < 2) return group;
+    const ll = pts.map(p => [p.lat, p.lon]);
+    L.polyline(ll, { color: '#0c110f', weight: 8, opacity: .55, lineJoin: 'round' }).addTo(group);
+    if (opts && opts.plain) L.polyline(ll, { color: '#b9cf68', weight: 4, lineJoin: 'round' }).addTo(group);
+    else {
+      // colour by pace: slow = haze blue, fast = moss. 8 buckets, consecutive equal buckets share a polyline.
+      const bucket = i => Math.round(clamp((A.spd[i] - A.lo) / Math.max(0.01, A.hi - A.lo), 0, 1) * 7);
+      let seg = [ll[0]], cur = bucket(1);
+      for (let i = 1; i < ll.length; i++) { const b = bucket(i); seg.push(ll[i]); if (b !== cur || i === ll.length - 1) { L.polyline(seg, { color: paceColor(cur / 7), weight: 4, lineJoin: 'round', lineCap: 'round' }).addTo(group); seg = [ll[i]]; cur = b; } }
+      A.splits.forEach((sp, k) => { if (sp.len === 1) { const i = A.cum.findIndex(c => c >= sp.km * 1000); if (i > 0) L.marker(ll[i], { icon: kmIcon(sp.km), interactive: false }).addTo(group); } });
+    }
+    L.marker(ll[0], { icon: kmIcon('S', 'start'), interactive: false }).addTo(group);
+    if (!(opts && opts.live)) L.marker(ll[ll.length - 1], { icon: kmIcon('F', 'end'), interactive: false }).addTo(group);
+    return group;
+  }
+  function chart(el, xs, ys, A, opts) {
+    const W = 600, H = 130, n = xs.length; if (n < 2) { el.innerHTML = '<div class="empty">Not enough data</div>'; return null; }
+    let lo = Math.min(...ys), hi = Math.max(...ys); if (opts.clip) { lo = opts.clip[0]; hi = opts.clip[1]; } if (hi - lo < 1e-6) hi = lo + 1;
+    const X = i => xs[i] / A.total * W, Y = v => H - 6 - clamp((v - lo) / (hi - lo), 0, 1) * (H - 12);
+    const d = ys.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
+    const avg = opts.avg != null ? Y(opts.avg) : null;
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path class="area ${opts.cls || ''}" d="${d} L${W} ${H} L0 ${H} Z"/>${avg != null ? `<line class="avg" x1="0" x2="${W}" y1="${avg.toFixed(1)}" y2="${avg.toFixed(1)}"/>` : ''}<path class="line ${opts.cls || ''}" d="${d}"/><line class="cursor" x1="0" x2="0" y1="0" y2="${H}"/></svg>`;
+    return { svg: el.firstChild, X };
+  }
+  function renderDetail(run) {
+    dRun = run; const pts = dPts = trackPts(run), A = dA = analyse(pts), el = $('detail');
+    const c = run.checks || {}, pace = run.movingS / run.km;
+    const chk = (k, label) => c[k] ? `<div><span>${label}<em>${c[k].note}</em></span><b class="${c[k].s >= .99 ? '' : c[k].s > .3 ? 'low' : 'bad'}">${Math.round(c[k].s * 100)}%</b></div>` : '';
+    const status = run.sim ? 'Simulation' : run.claim ? 'Claimed · #' + run.claim : run.road ? 'Claimable' : 'Rejected';
+    el.innerHTML = `<div class="dhead"><button class="back" id="d-back">‹ Back</button><h2>${runTitle(run)}</h2><span class="chip ${run.road ? 'ok' : run.sim ? '' : 'bad'}"><i></i><span>${status}</span></span>
+        <div class="when"><b>${new Date(run.start).toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'short' })}</b> · ${run.km.toFixed(2)} km in ${fmtTime(run.durS)} · +${fmtInt(run.road)} ROAD</div></div>
+      <div class="lmap" id="d-map"><div class="mapnote" id="d-note"></div>${hasL ? '' : '<div class="mapoff">Map tiles need a connection. The route is still recorded.</div>'}</div>
+      <div class="stats">
+        <div><b>${run.km.toFixed(2)}<small>km</small></b><span>Distance</span></div>
+        <div><b>${fmtTime(run.durS)}</b><span>Elapsed</span></div>
+        <div><b>${fmtTime(run.movingS)}</b><span>Moving</span></div>
+        <div><b>${fmtPace(pace)}<small>/km</small></b><span>Avg pace</span></div>
+        <div><b>${A.best ? fmtPace(A.best.s) : '–'}<small>/km</small></b><span>Best km${A.best ? ' · km ' + A.best.km : ''}</span></div>
+        <div><b>${(run.km / (run.movingS / 3600)).toFixed(1)}<small>km/h</small></b><span>Avg speed</span></div>
+        <div><b>${(A.maxSpd * 3.6).toFixed(1)}<small>km/h</small></b><span>Max speed</span></div>
+        <div><b>+${run.elev || 0}<small>m</small></b><span>Elevation gain</span></div>
+        <div><b>${A.hasAlt ? Math.round(A.maxAlt) : '–'}<small>m</small></b><span>Highest point</span></div>
+        <div><b>${run.motion ? Math.round(run.steps / (run.movingS / 60)) : '–'}<small>spm</small></b><span>Cadence</span></div>
+        <div><b>${run.motion ? fmtInt(run.steps) : '–'}</b><span>Steps</span></div>
+        <div><b>${fmtInt(run.pts)}</b><span>GPS fixes</span></div>
+        <div><b>±${Math.round(A.avgAcc)}<small>m</small></b><span>Avg accuracy</span></div>
+        <div><b>${run.quality.toFixed(2)}</b><span>Quality</span></div>
+      </div>
+      <div class="dgrid">
+        <div class="dcard"><h4>Pace <span id="d-pace-v">${fmtPace(pace)} /km avg</span></h4><div class="dchart" id="d-pace"></div><div class="axis"><span>0 km</span><span>${(A.total / 2000).toFixed(1)} km</span><span>${(A.total / 1000).toFixed(2)} km</span></div></div>
+        <div class="dcard"><h4>Elevation <span id="d-elev-v">${A.hasAlt ? Math.round(A.minAlt) + ' – ' + Math.round(A.maxAlt) + ' m' : 'no altitude from this phone'}</span></h4><div class="dchart" id="d-elev"></div><div class="axis"><span>0 km</span><span>${(A.total / 2000).toFixed(1)} km</span><span>${(A.total / 1000).toFixed(2)} km</span></div></div>
+        <div class="dcard wide"><h4>Splits <span>${A.splits.length} km</span></h4>${A.splits.length ? `<table class="splits"><tr><th>km</th><th>Pace</th><th>Time</th><th>Elev</th><th></th></tr>${A.splits.map(sp => { const per = sp.s / sp.len; const w = A.best ? clamp(A.best.s / per, 0, 1) * 100 : 60; return `<tr class="${A.best && sp === A.best ? 'best' : ''}"><td>${sp.len === 1 ? sp.km : sp.len.toFixed(2)}</td><td>${fmtPace(per)}</td><td class="n">${fmtTime(sp.s)}</td><td class="n">${sp.alt == null ? '–' : (sp.alt >= 0 ? '+' : '') + Math.round(sp.alt) + ' m'}</td><td class="bar"><i style="width:${w.toFixed(0)}%"></i></td></tr>`; }).join('')}</table>` : '<div class="empty">Under one kilometre</div>'}</div>
+        <div class="dcard wide"><h4>Proof of run <span>${run.km.toFixed(2)} × ${CFG.ROAD_PER_KM} × ${run.quality.toFixed(2)} = ${fmtInt(run.road)} ROAD</span></h4><div class="dcheck">${chk('gps', 'GPS track')}${chk('pace', 'Pace')}${chk('cad', 'Cadence')}${chk('hist', 'History')}</div></div>
+      </div>
+      <div class="dactions"><button class="btn" id="d-gpx">Download GPX</button><button class="btn" id="d-proof">Copy proof</button><button class="btn danger" id="d-del">Delete run</button></div>`;
+    $('d-back').onclick = () => document.body.classList.remove('detail-open');
+    $('d-gpx').onclick = () => saveFile('sweat-to-stock-' + new Date(run.start).toISOString().slice(0, 10) + '-' + run.id + '.gpx', gpx(run), 'application/gpx+xml');
+    $('d-proof').onclick = () => copy(JSON.stringify({ app: 'sweat-to-stock', v: APP_VERSION, run }), 'Proof copied');
+    $('d-del').onclick = () => { if (run.claim) { toast('This run is part of a claim'); return; } openSheet('<h3>Delete this run?</h3><p class="sub">Its proof and ROAD are removed from this phone.</p><div class="row2"><button class="cta-big ghost" id="s-back">Keep</button><button class="cta-big danger" id="s-yes">Delete</button></div>'); $('s-back').onclick = closeSheet; $('s-yes').onclick = () => { S.runs = S.runs.filter(x => x.id !== run.id); save(); closeSheet(); dRun = null; el.innerHTML = '<div class="side-empty"><b>Run deleted</b></div>'; document.body.classList.remove('detail-open'); show(cur); toast('Run deleted'); }; };
+    // map
+    if (dmap) { dmap.remove(); dmap = null; }
+    if (hasL && pts.length > 1) {
+      dmap = makeMap($('d-map'));
+      drawRoute(dmap, pts, A);
+      dmap.fitBounds(L.latLngBounds(pts.map(p => [p.lat, p.lon])), { padding: [28, 28] });
+      dHover = L.circleMarker([pts[0].lat, pts[0].lon], { radius: 7, color: '#fff', weight: 2, fillColor: '#b9cf68', fillOpacity: 1, opacity: 0 }).addTo(dmap);
+    }
+    // charts, synced with the map
+    const paceY = A.spd.map(v => v > 0.3 ? 1000 / v : 1000 / 0.3), pc = chart($('d-pace'), A.cum, paceY.map(v => -v), A, { avg: -pace, clip: [-(1000 / Math.max(0.3, A.lo)), -(1000 / Math.max(0.3, A.hi))] });
+    const ec = A.hasAlt ? chart($('d-elev'), A.cum, pts.map(p => p.alt != null ? p.alt : A.minAlt), A, { cls: 'haze' }) : null;
+    if (!ec) $('d-elev').innerHTML = '<div class="empty">This phone did not report altitude</div>';
+    const hover = e => {
+      const rect = e.currentTarget.getBoundingClientRect(), x = ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) / rect.width * A.total;
+      let i = A.cum.findIndex(c => c >= x); if (i < 0) i = A.n - 1;
+      [pc, ec].forEach(ch => { if (ch) { const cur = ch.svg.querySelector('.cursor'); cur.style.display = 'block'; cur.setAttribute('x1', ch.X(i)); cur.setAttribute('x2', ch.X(i)); } });
+      $('d-pace-v').textContent = fmtPace(paceY[i]) + ' /km at ' + (A.cum[i] / 1000).toFixed(2) + ' km';
+      if (A.hasAlt && pts[i].alt != null) $('d-elev-v').textContent = Math.round(pts[i].alt) + ' m at ' + (A.cum[i] / 1000).toFixed(2) + ' km';
+      if (dHover) { dHover.setLatLng([pts[i].lat, pts[i].lon]); dHover.setStyle({ opacity: 1 }); }
+      const note = $('d-note'); note.className = 'mapnote on'; note.textContent = (A.cum[i] / 1000).toFixed(2) + ' km · ' + fmtPace(paceY[i]) + ' /km · ' + fmtTime(pts[i].t) + (pts[i].alt != null ? ' · ' + Math.round(pts[i].alt) + ' m' : '');
+    };
+    const leave = () => { [pc, ec].forEach(ch => { if (ch) ch.svg.querySelector('.cursor').style.display = 'none'; }); $('d-pace-v').textContent = fmtPace(pace) + ' /km avg'; if (A.hasAlt) $('d-elev-v').textContent = Math.round(A.minAlt) + ' – ' + Math.round(A.maxAlt) + ' m'; if (dHover) dHover.setStyle({ opacity: 0 }); $('d-note').className = 'mapnote'; };
+    ['d-pace', 'd-elev'].forEach(id => { const n = $(id); n.addEventListener('mousemove', hover); n.addEventListener('touchmove', hover, { passive: true }); n.addEventListener('mouseleave', leave); n.addEventListener('touchend', leave); });
+  }
   function openRun(id) {
     const r = S.runs.find(x => x.id === id); if (!r) return;
-    const c = r.checks || {};
-    const row = (k, label) => c[k] ? `<div class="kv"><span>${label}</span><b>${Math.round(c[k].s * 100)}% · ${c[k].note}</b></div>` : '';
-    openSheet(`<h3>${r.km.toFixed(2)} km · ${fmtTime(r.durS)}</h3><p class="sub">${new Date(r.start).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}${r.sim ? ' · simulation' : ''}</p>
-      <div class="mini"><svg viewBox="0 0 260 200" preserveAspectRatio="xMidYMid meet"><polyline class="route" id="m-route" points="" style="fill:none;stroke:#b9cf68;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke"/></svg></div>
-      <div class="kv"><span>Moving pace</span><b>${fmtPace(r.movingS / r.km)} /km</b></div>
-      <div class="kv"><span>Elevation gain</span><b>+${r.elev || 0} m</b></div>
-      <div class="kv"><span>GPS fixes</span><b>${r.pts}</b></div>
-      ${row('gps', 'GPS track')}${row('pace', 'Pace')}${row('cad', 'Cadence')}${row('hist', 'History')}
-      <div class="kv"><span>Reward</span><b>${r.km.toFixed(2)} × ${CFG.ROAD_PER_KM} × ${r.quality.toFixed(2)} = ${fmtInt(r.road)} ROAD</b></div>
-      <div class="kv"><span>Status</span><b>${r.sim ? 'Simulation' : r.claim ? 'Claimed in #' + r.claim : 'Claimable'}</b></div>
-      <div class="row2"><button class="cta-big ghost" id="m-proof">Copy proof</button><button class="cta-big danger" id="m-del">Delete</button></div>`);
-    if (r.track && r.track.length > 1) drawTrack(null, $('m-route'), null, r.track.map(p => ({ lat: p[1], lon: p[2] })));
-    $('m-proof').onclick = () => copy(JSON.stringify({ app: 'sweat-to-stock', v: APP_VERSION, run: r }), 'Proof copied');
-    $('m-del').onclick = () => { if (r.claim) { toast('This run is part of a claim'); return; } S.runs = S.runs.filter(x => x.id !== id); save(); closeSheet(); show(cur); toast('Run deleted'); };
+    document.body.classList.add('detail-open');
+    $('side').scrollTop = 0; window.scrollTo(0, 0);
+    renderDetail(r);
+    setTimeout(() => { if (dmap) dmap.invalidateSize(); }, 50);
+  }
+
+  // live maps: the run view's map on the phone, and the right panel on a wide screen
+  let liveMaps = [], liveTick = 0;
+  function startLiveMaps() {
+    stopLiveMaps();
+    if (!hasL) return;
+    const targets = [$('r-lmap')];
+    if (isWide()) {
+      const el = $('detail'); dRun = null; if (dmap) { dmap.remove(); dmap = null; }
+      el.innerHTML = `<div class="dhead"><h2>Live</h2><span class="chip ok"><i></i><span>Recording</span></span><div class="when">The route draws as the phone records it. Details, splits and charts come at the end.</div></div><div class="lmap" id="d-map"></div>
+        <div class="stats"><div><b id="l-km">0.00<small>km</small></b><span>Distance</span></div><div><b id="l-time">00:00</b><span>Elapsed</span></div><div><b id="l-pace">–:––<small>/km</small></b><span>Pace</span></div><div><b id="l-pts">0</b><span>GPS fixes</span></div><div><b id="l-acc">–</b><span>Accuracy</span></div><div><b id="l-elev">+0<small>m</small></b><span>Elevation gain</span></div></div>`;
+      targets.push($('d-map'));
+    }
+    $('r-map').style.display = 'none';
+    liveMaps = targets.map(el => {
+      const map = makeMap(el, { zoomControl: false }); map.setView([48.85, 2.35], 3);
+      const line = L.polyline([], { color: '#b9cf68', weight: 4, lineJoin: 'round' }).addTo(map);
+      const outline = L.polyline([], { color: '#0c110f', weight: 8, opacity: .55, lineJoin: 'round' }).addTo(map); line.bringToFront();
+      const circle = L.circle([0, 0], { radius: 0, color: '#b9cf68', weight: 1, fillOpacity: .12 }).addTo(map);
+      const marker = L.circleMarker([0, 0], { radius: 7, color: '#fff', weight: 2, fillColor: '#b9cf68', fillOpacity: 1 }).addTo(map);
+      let startMk = null;
+      return { map, line, outline, circle, marker, get startMk() { return startMk; }, set startMk(v) { startMk = v; }, follow: true, n: 0 };
+    });
+    liveMaps.forEach(m => { m.map.on('dragstart zoomstart', () => { m.follow = false; }); });
+    setTimeout(() => liveMaps.forEach(m => m.map.invalidateSize()), 100);
+  }
+  function updateLiveMaps() {
+    const pts = R.pts; if (!pts.length) return;
+    const last = pts[pts.length - 1], ll = [last.lat, last.lon];
+    liveMaps.forEach(m => {
+      if (m.n === 0) { m.map.setView(ll, 16); m.startMk = L.marker([pts[0].lat, pts[0].lon], { icon: kmIcon('S', 'start'), interactive: false }).addTo(m.map); }
+      for (let i = m.n; i < pts.length; i++) { m.line.addLatLng([pts[i].lat, pts[i].lon]); m.outline.addLatLng([pts[i].lat, pts[i].lon]); }
+      m.n = pts.length;
+      m.marker.setLatLng(ll); m.circle.setLatLng(ll); m.circle.setRadius(R.acc || 0);
+      if (m.follow && Date.now() - liveTick > 1500) m.map.panTo(ll, { animate: true, duration: .5 });
+    });
+    if (Date.now() - liveTick > 1500) liveTick = Date.now();
+    if ($('l-km')) { $('l-km').innerHTML = R.km.toFixed(2) + '<small>km</small>'; $('l-time').textContent = fmtTime(elapsed()); $('l-pace').innerHTML = fmtPace(currentPace()) + '<small>/km</small>'; $('l-pts').textContent = pts.length; $('l-acc').textContent = R.acc == null ? '–' : '±' + Math.round(R.acc) + ' m'; $('l-elev').innerHTML = '+' + Math.round(R.elevGain) + '<small>m</small>'; }
+  }
+  function stopLiveMaps() { liveMaps.forEach(m => m.map.remove()); liveMaps = []; $('r-map').style.display = ''; }
+
+  function gpx(run) {
+    const pts = trackPts(run), iso = t => new Date(run.start + t * 1000).toISOString();
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Sweat-to-Stock" xmlns="http://www.topografix.com/GPX/1/1"><metadata><time>' + iso(0) + '</time></metadata><trk><name>' + runTitle(run) + ' ' + run.km.toFixed(2) + ' km</name><type>running</type><trkseg>' +
+      pts.map(p => '<trkpt lat="' + p.lat + '" lon="' + p.lon + '">' + (p.alt != null ? '<ele>' + p.alt.toFixed(1) + '</ele>' : '') + '<time>' + iso(p.t) + '</time></trkpt>').join('') + '</trkseg></trk></gpx>';
+  }
+  async function saveFile(name, text, mime) {
+    try {
+      const file = new File([text], name, { type: mime });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: mime })); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    toast('Saved ' + name);
   }
   async function copy(text, msg) { try { await navigator.clipboard.writeText(text); toast(msg || 'Copied'); } catch (e) { openSheet('<h3>Copy this</h3><div class="field"><textarea rows="8" readonly>' + text.replace(/</g, '&lt;') + '</textarea></div>'); } }
 
@@ -776,19 +1031,16 @@
   $('walletchip').addEventListener('click', openSettings);
   async function exportBackup() {
     const json = JSON.stringify(Object.assign({ app: 'sweat-to-stock', v: APP_VERSION, exported: new Date().toISOString() }, S), null, 1);
-    const name = 'sweat-to-stock-backup-' + new Date().toISOString().slice(0, 10) + '.json';
-    try {
-      const file = new File([json], name, { type: 'application/json' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Sweat-to-Stock backup' }); return; }
-    } catch (e) { if (e && e.name === 'AbortError') return; }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' })); a.download = name; document.body.appendChild(a); a.click(); a.remove();
-    toast('Backup downloaded');
+    saveFile('sweat-to-stock-backup-' + new Date().toISOString().slice(0, 10) + '.json', json, 'application/json');
   }
 
   // ---------- boot ----------
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('../sw.js').then(r => r.update()).catch(() => {});
   renderHome(); syncPayouts(false);
-  if (views.includes(q.get('v'))) show(q.get('v'));   // ?v=claim opens a tab directly (tests, links)
+  addEventListener('resize', () => { if (dmap) dmap.invalidateSize(); liveMaps.forEach(m => m.map.invalidateSize()); });
+  if (isWide() && S.runs.length) renderDetail(S.runs[S.runs.length - 1]);
+  if (views.includes(q.get('v'))) show(q.get('v'));
+  if (q.get('run')) openRun(q.get('run'));   // ?run=<id> opens a run's detail   // ?v=claim opens a tab directly (tests, links)
   addEventListener('beforeunload', e => { if (R.active) { e.preventDefault(); e.returnValue = ''; } });
 })();
 </script>
