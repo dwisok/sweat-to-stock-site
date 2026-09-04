@@ -167,30 +167,41 @@
   .demo .dots i.on { background: var(--moss); }
 
   .phone-wrap { display: grid; place-items: center; }
-  /* iPhone 15 Pro at 0.78 scale: 393×852 pt screen, titanium frame, Dynamic Island, side buttons, home indicator. */
+  /* iPhone 15 Pro, scaled from the physical device. Screen 393×852 pt (radius 55 pt), black bezel ≈ 2.7 mm,
+     titanium band ≈ 1.5 mm, Dynamic Island 126×37 pt at 11 pt from the top, home indicator 134×5 pt at 8 pt from the bottom.
+     --pw is the screen width; everything else derives from it. */
   .phone {
-    --pw: 306px; --ph: 665px; --r: 50px;
-    position: relative; width: calc(var(--pw) + 22px); height: calc(var(--ph) + 22px); border-radius: calc(var(--r) + 11px);
-    background: linear-gradient(160deg, #6a6d6b, #2b2d2c 30%, #1f2120 70%, #4a4d4b);
-    padding: 3px;
-    box-shadow: 0 70px 120px -40px rgba(0,0,0,.9), 0 0 0 1px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.12);
+    --pw: 306px; --ph: calc(var(--pw) * 2.168); --r: calc(var(--pw) * .14);
+    --bz: calc(var(--pw) * .042); --bd: calc(var(--pw) * .023);
+    position: relative; width: calc(var(--pw) + 2 * (var(--bz) + var(--bd))); height: calc(var(--ph) + 2 * (var(--bz) + var(--bd)));
+    border-radius: calc(var(--r) + var(--bz) + var(--bd)); padding: var(--bd);
+    background: linear-gradient(165deg, #8d918f 0%, #4a4d4c 18%, #2c2e2d 45%, #353837 70%, #6f7371 100%);
+    box-shadow: 0 80px 120px -40px rgba(0,0,0,.85), 0 0 0 1px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.14);
   }
-  .phone .bezel { width: 100%; height: 100%; border-radius: calc(var(--r) + 8px); background: #050505; padding: 8px; }
+  /* antenna lines in the band */
+  .phone::before, .phone::after { content: ""; position: absolute; left: 0; right: 0; height: 1.5px; background: rgba(0,0,0,.45); }
+  .phone::before { top: calc(var(--ph) * .09); }
+  .phone::after { bottom: calc(var(--ph) * .09); }
+  .phone .bezel { width: 100%; height: 100%; border-radius: calc(var(--r) + var(--bz)); background: #000; padding: var(--bz); position: relative; z-index: 1; }
   .phone .screen { position: relative; width: 100%; height: 100%; border-radius: var(--r); overflow: hidden; background: linear-gradient(180deg, #121a16, #0d1310); font-family: -apple-system, "SF Pro Text", "SF Pro Display", Inter, system-ui, sans-serif; color: var(--ink); }
-  .phone i[class^="btn-"] { position: absolute; display: block; background: linear-gradient(90deg, #4c4f4e, #2a2c2b); border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.5); }
-  .phone .btn-action { left: -3px; top: 118px; width: 3px; height: 24px; }
-  .phone .btn-vol { left: -3px; width: 3px; height: 46px; }
-  .phone .btn-vol.up { top: 162px; }
-  .phone .btn-vol.down { top: 216px; }
-  .phone .btn-power { right: -3px; top: 190px; width: 3px; height: 72px; background: linear-gradient(90deg, #2a2c2b, #4c4f4e); }
-  .phone .island { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 98px; height: 29px; border-radius: 16px; background: #000; z-index: 4; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); }
-  .phone .island::after { content: ""; position: absolute; right: 9px; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%; background: radial-gradient(circle at 40% 40%, #1d2a3a, #050708 70%); }
-  .phone .status { position: absolute; top: 0; left: 0; right: 0; height: 46px; display: flex; justify-content: space-between; align-items: center; padding: 6px 28px 0 30px; z-index: 3; color: #fff; }
-  .phone .status .time { font-size: 13px; font-weight: 600; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
-  .phone .status .icons { display: flex; align-items: center; gap: 5px; fill: currentColor; }
-  .phone .status .icons svg { display: block; }
-  .phone .home-ind { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); width: 104px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.92); z-index: 5; }
-  .scr { position: absolute; inset: 0; padding: 58px 20px 30px; display: flex; flex-direction: column; opacity: 0; transform: scale(.985); transition: opacity .45s ease, transform .45s ease; }
+  /* glass sheen */
+  .phone .screen::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 6; border-radius: inherit;
+    background: linear-gradient(115deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,.02) 28%, transparent 45%), radial-gradient(120% 60% at 50% -10%, rgba(255,255,255,.05), transparent 60%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); }
+  .phone i[class^="btn-"] { position: absolute; display: block; width: calc(var(--pw) * .012); border-radius: 1.5px; background: linear-gradient(90deg, #5a5d5c, #2e302f 60%, #222423); box-shadow: 0 0 0 .5px rgba(0,0,0,.6); z-index: 0; }
+  .phone .btn-action { left: calc(var(--pw) * -.012); top: calc(var(--ph) * .131); height: calc(var(--ph) * .029); }
+  .phone .btn-vol { left: calc(var(--pw) * -.012); height: calc(var(--ph) * .047); }
+  .phone .btn-vol.up { top: calc(var(--ph) * .186); }
+  .phone .btn-vol.down { top: calc(var(--ph) * .243); }
+  .phone .btn-power { right: calc(var(--pw) * -.012); top: calc(var(--ph) * .21); height: calc(var(--ph) * .087); background: linear-gradient(90deg, #222423, #2e302f 40%, #5a5d5c); }
+  .phone .island { position: absolute; top: calc(var(--pw) * .028); left: 50%; transform: translateX(-50%); width: calc(var(--pw) * .32); height: calc(var(--pw) * .094); border-radius: calc(var(--pw) * .05); background: #000; z-index: 4; }
+  .phone .island::after { content: ""; position: absolute; right: calc(var(--pw) * .028); top: 50%; width: calc(var(--pw) * .03); height: calc(var(--pw) * .03); transform: translateY(-50%); border-radius: 50%; background: radial-gradient(circle at 38% 38%, #1b2836, #06090c 65%); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.08); }
+  .phone .status { position: absolute; top: 0; left: 0; right: 0; height: calc(var(--pw) * .15); display: flex; justify-content: space-between; align-items: center; padding: calc(var(--pw) * .018) calc(var(--pw) * .085) 0 calc(var(--pw) * .098); z-index: 3; color: #fff; }
+  .phone .status .time { font-size: calc(var(--pw) * .043); font-weight: 600; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+  .phone .status .icons { display: flex; align-items: center; gap: calc(var(--pw) * .017); fill: currentColor; height: calc(var(--pw) * .043); }
+  .phone .status .icons svg { display: block; height: 100%; width: auto; }
+  .phone .home-ind { position: absolute; left: 50%; bottom: calc(var(--pw) * .02); transform: translateX(-50%); width: calc(var(--pw) * .34); height: calc(var(--pw) * .013); border-radius: 99px; background: rgba(255,255,255,.9); z-index: 5; }
+  .scr { position: absolute; inset: 0; padding: calc(var(--pw) * .19) calc(var(--pw) * .065) calc(var(--pw) * .1); display: flex; flex-direction: column; opacity: 0; transform: scale(.985); transition: opacity .45s ease, transform .45s ease; }
   .scr.on { opacity: 1; transform: none; }
   .scr .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
   .scr .lbl { font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
@@ -268,7 +279,7 @@
   .cta-big { margin-top: auto; text-align: center; padding: 16px; border-radius: 999px; background: var(--moss); color: #0c110f; font-weight: 700; font-size: 16px; }
   .cta-big.pulse { animation: ctapulse 2.2s ease-in-out infinite; }
   @keyframes ctapulse { 50% { box-shadow: 0 0 0 10px rgba(185,207,104,0); } 0%, 100% { box-shadow: 0 0 0 0 rgba(185,207,104,.35); } }
-  .tabbar { display: grid; grid-template-columns: repeat(3, 1fr); margin: 14px -20px -30px; padding: 12px 20px 26px; border-top: 1px solid var(--line); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); text-align: center; }
+  .tabbar { display: grid; grid-template-columns: repeat(3, 1fr); margin: 14px calc(var(--pw) * -.065) calc(var(--pw) * -.1); padding: 12px calc(var(--pw) * .065) calc(var(--pw) * .085); border-top: 1px solid var(--line); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); text-align: center; }
   .tabbar .on { color: var(--moss); }
   .maptag { position: absolute; left: 10px; bottom: 8px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
   .maptag i { font-style: normal; color: var(--ink); }
@@ -316,15 +327,11 @@
     .demo .st h4 { font-size: 30px; margin: 6px 0 8px; }
     .demo .st p { font-size: 13.5px; line-height: 1.45; }
     .demo .dots { margin-top: 12px; }
-    .phone { --pw: 218px; --ph: 472px; --r: 37px; }
-    .phone .bezel { padding: 6px; }
-    .phone .island { width: 78px; height: 23px; top: 7px; }
-    .phone .status { height: 38px; padding: 4px 22px 0 24px; }
+    .phone { --pw: 212px; }
     .phone .status .time { font-size: 11px; }
-    .phone .status .icons { transform: scale(.85); transform-origin: right center; }
-    .phone .home-ind { width: 84px; height: 3px; bottom: 5px; }
-    .phone .btn-action { top: 92px; height: 18px; } .phone .btn-vol { height: 36px; } .phone .btn-vol.up { top: 126px; } .phone .btn-vol.down { top: 168px; } .phone .btn-power { top: 148px; height: 56px; }
-    .scr { padding: 44px 13px 22px; }
+    .scr .lbl { font-size: 10px; letter-spacing: .12em; white-space: nowrap; }
+    .scr .live { font-size: 9px; white-space: nowrap; }
+    .scr .top { margin-bottom: 10px; }
     .bigstat b { font-size: 56px; }
     .stats3 { margin: 12px 0 10px; }
     .stats3 b { font-size: 18px; }
@@ -338,7 +345,6 @@
     .btn-row span { font-size: 13px; padding: 11px 6px; }
     .balance > b { font-size: 42px; }
     .week { margin: 10px 0; }
-    .tabbar { margin: 10px -14px -24px; padding: 10px 14px 18px; }
     .scr .brandline { font-size: 12px; letter-spacing: .03em; }
     .claimhead { padding: 0 0 8px; }
     .claimhead b { font-size: 40px; }
