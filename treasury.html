@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Treasury — Sweat-to-Stock</title>
+<meta name="description" content="The Sweat-to-Stock payout treasury on Robinhood Chain: live balance, caps and every payout.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0c110f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0c110f; --bg-2:#121a16; --ink:#eef0e8; --muted:rgba(238,240,232,.62); --faint:rgba(238,240,232,.38); --line:rgba(238,240,232,.12); --moss:#b9cf68; --haze:#cfdde8; --bad:#e08a7a;
+    --display:"Barlow Condensed","Arial Narrow",Impact,sans-serif; --body:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+  a { color:inherit; }
+  .nav { display:flex; justify-content:space-between; align-items:center; padding:18px clamp(18px,4vw,48px); }
+  .nav .brand { font-family:var(--display); font-weight:800; font-size:22px; letter-spacing:.06em; text-transform:uppercase; text-decoration:none; }
+  .nav a.cta { display:inline-flex; align-items:center; gap:8px; font-size:14px; font-weight:700; text-decoration:none; border-radius:999px; padding:11px 18px; background:var(--moss); color:#0c110f; }
+  .wrap { max-width:1100px; margin:0 auto; padding:clamp(24px,5vw,64px) clamp(18px,6vw,96px) 80px; }
+  .eyebrow { font:600 12px/1 var(--body); letter-spacing:.3em; text-transform:uppercase; color:var(--moss); margin:0 0 18px; display:flex; align-items:center; gap:14px; }
+  .eyebrow::before { content:""; width:28px; height:1px; background:var(--moss); }
+  h1 { font-family:var(--display); font-weight:800; text-transform:uppercase; line-height:.92; font-size:clamp(44px,7vw,96px); margin:0 0 18px; }
+  h1 em { font-style:normal; color:var(--moss); }
+  .lede { color:var(--muted); max-width:60ch; margin:0 0 34px; font-size:18px; }
+  .addr { display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:14px; background:var(--bg-2); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:26px; word-break:break-all; }
+  .addr b { font-family:var(--body); font-weight:600; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); }
+  .addr a { color:var(--moss); text-decoration:none; font-family:var(--body); font-weight:600; font-size:14px; white-space:nowrap; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:34px; }
+  .stat { background:var(--bg-2); border:1px solid var(--line); border-radius:18px; padding:20px 22px; }
+  .stat b { display:block; font-family:var(--display); font-weight:800; font-size:44px; line-height:1; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  .stat b small { font-size:18px; color:var(--muted); font-weight:600; margin-left:4px; font-family:var(--body); }
+  .stat span { display:block; margin-top:8px; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); }
+  .stat.big { grid-column:1 / -1; background:linear-gradient(160deg,rgba(185,207,104,.16),rgba(185,207,104,.04)); border-color:rgba(185,207,104,.3); }
+  .stat.big b { font-size:clamp(56px,9vw,110px); color:var(--ink); }
+  .stat .sub { display:block; margin-top:6px; font-size:14px; color:var(--muted); letter-spacing:0; text-transform:none; }
+  .chip { display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; border-radius:999px; padding:6px 11px; background:rgba(238,240,232,.08); color:var(--muted); }
+  .chip i { width:7px; height:7px; border-radius:50%; background:var(--faint); }
+  .chip.ok { color:var(--moss); background:rgba(185,207,104,.12); } .chip.ok i { background:var(--moss); }
+  .chip.bad { color:var(--bad); background:rgba(224,138,122,.12); } .chip.bad i { background:var(--bad); }
+  h2 { font-family:var(--display); font-weight:800; text-transform:uppercase; font-size:32px; margin:40px 0 12px; }
+  .table { border-top:1px solid var(--line); }
+  .row { display:grid; grid-template-columns:120px 1fr auto; gap:14px; align-items:center; padding:14px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .row .d { font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); }
+  .row .t small { display:block; color:var(--faint); font-size:12px; font-family:ui-monospace,Menlo,monospace; }
+  .row .v { text-align:right; font-weight:600; color:var(--moss); font-variant-numeric:tabular-nums; }
+  .row .v small { display:block; color:var(--faint); font-weight:500; font-size:12px; }
+  .row a { color:var(--moss); text-decoration:none; }
+  .empty { padding:28px 0; color:var(--faint); font-size:14px; }
+  .note { font-size:13px; color:var(--faint); margin-top:26px; max-width:70ch; }
+  .note a { color:var(--muted); }
+  .err { color:var(--bad); font-size:14px; margin-top:10px; }
+  @media (max-width:600px) { .row { grid-template-columns:1fr auto; } .row .d { grid-column:1 / -1; } }
+</style>
+</head>
+<body>
+<nav class="nav"><a class="brand" href="./">Sweat-to-Stock</a><a class="cta" href="app/">Open the app →</a></nav>
+<main class="wrap">
+  <p class="eyebrow">Treasury</p>
+  <h1>Where the <em>money</em> is.</h1>
+  <p class="lede">Payouts come from one contract on Robinhood Chain. It holds ETH; each payout swaps a slice of it into the Stock Token the runner chose and sends it to their wallet in the same transaction. Everything below is read live from the chain.</p>
+
+  <div class="addr"><b>Contract</b><span id="addr">0xE547a0ca5879a49C8d9ac8112a8fbef7A0F372a6</span><a id="explorer" href="https://robinhoodchain.blockscout.com/address/0xE547a0ca5879a49C8d9ac8112a8fbef7A0F372a6" target="_blank" rel="noopener">View on explorer ↗</a></div>
+
+  <div class="grid">
+    <div class="stat big"><b id="bal">–<small>ETH</small></b><span class="sub" id="balusd">Reading the chain…</span><span>Pool balance</span></div>
+    <div class="stat"><b id="npay">–</b><span>Payouts</span></div>
+    <div class="stat"><b id="paidusd">–<small>USD</small></b><span>Paid out in total</span></div>
+    <div class="stat"><b id="cap">–<small>ETH</small></b><span>Cap per claim</span></div>
+    <div class="stat"><b id="daily">–<small>ETH</small></b><span>Daily cap · <span id="spent">–</span> spent today</span></div>
+    <div class="stat"><b id="status"><span class="chip"><i></i>Reading…</span></b><span>Status</span></div>
+  </div>
+
+  <h2>Payouts</h2>
+  <div class="table" id="payouts"><div class="empty">Reading payouts from the chain…</div></div>
+  <div class="err" id="err"></div>
+  <p class="note">Rate: 1 ROAD = 0.01 USD. Payouts are bounded by the caps above even if the operator key were compromised; the owner can pause the contract and withdraw at any time. Chain: Robinhood Chain (id 4663). Price shown is the live Uniswap quote of ETH into USDG. Pending claims that are not yet paid appear only in the runner's app.</p>
+</main>
+
+<script>
+(async () => {
+  const RPC = 'https://rpc.mainnet.chain.robinhood.com', T = '0xE547a0ca5879a49C8d9ac8112a8fbef7A0F372a6', EXPL = 'https://robinhoodchain.blockscout.com';
+  const QUOTER = '0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7', WETH = '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73', USDG = '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
+  const DEPLOY_BLOCK = 54462966, TOPIC_PAYOUT = '0x111c984efbcf6f3710f863072e32899749665b14c8dbda4d377b4c1cf65ea35f', TOPIC_DIRECT = '0xc0192181744813a46482f256f14edb3dc8a73367d12637340f9c81ac1769a364';
+  const $ = id => document.getElementById(id);
+  let idc = 1;
+  const rpc = async (method, params) => { const r = await fetch(RPC, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: idc++, method, params }) }); const j = await r.json(); if (j.error) throw new Error(j.error.message); return j.result; };
+  const call = (to, data) => rpc('eth_call', [{ to, data }, 'latest']);
+  const pad = (h, n = 64) => h.replace(/^0x/, '').padStart(n, '0');
+  const big = h => BigInt(h), eth = w => Number(w) / 1e18;
+  const fmt = (n, d = 4) => n.toLocaleString('en-GB', { maximumFractionDigits: d });
+  const short = a => a.slice(0, 6) + '…' + a.slice(-4);
+  try {
+    const [balHex, capHex, dailyHex, spentHex, pausedHex] = await Promise.all([rpc('eth_getBalance', [T, 'latest']), call(T, '0xd6db6834'), call(T, '0x5f2aeb16'), call(T, '0xf059cf2b'), call(T, '0x5c975abb')]);
+    const bal = eth(big(balHex));
+    $('bal').innerHTML = fmt(bal) + '<small>ETH</small>';
+    $('cap').innerHTML = fmt(eth(big(capHex))) + '<small>ETH</small>'; $('daily').innerHTML = fmt(eth(big(dailyHex))) + '<small>ETH</small>'; $('spent').textContent = fmt(eth(big(spentHex))) + ' ETH';
+    const paused = big(pausedHex) !== 0n;
+    $('status').innerHTML = paused ? '<span class="chip bad"><i></i>Paused</span>' : '<span class="chip ok"><i></i>Live · paying claims</span>';
+    // ETH price: quote 1 ETH → USDG on Uniswap (QuoterV2.quoteExactInputSingle)
+    let ethUsd = null;
+    try {
+      const data = '0xc6a5026a' + pad(WETH) + pad(USDG) + pad((10n ** 18n).toString(16)) + pad('64') + pad('0');
+      const out = await call(QUOTER, data); ethUsd = Number(big('0x' + out.slice(2, 66))) / 1e6;
+      $('balusd').textContent = '≈ ' + fmt(bal * ethUsd, 2) + ' USD at ' + fmt(ethUsd, 0) + ' USD per ETH';
+    } catch (e) { $('balusd').textContent = 'USD estimate unavailable'; }
+    // payouts: Payout + PayoutDirect events since deployment, in chunks
+    const latest = Number(big(await rpc('eth_blockNumber', [])));
+    const logs = [];
+    for (let from = DEPLOY_BLOCK; from <= latest; from += 100000) {
+      const to = Math.min(latest, from + 99999);
+      const chunk = await rpc('eth_getLogs', [{ address: T, fromBlock: '0x' + from.toString(16), toBlock: '0x' + to.toString(16), topics: [[TOPIC_PAYOUT, TOPIC_DIRECT]] }]);
+      logs.push(...chunk);
+    }
+    logs.reverse();
+    $('npay').textContent = logs.length;
+    let totalEth = 0;
+    const rows = await Promise.all(logs.map(async l => {
+      const direct = l.topics[0] === TOPIC_DIRECT;
+      const token = '0x' + l.topics[2].slice(26), to = '0x' + l.topics[3].slice(26);
+      const words = l.data.slice(2).match(/.{64}/g) || [];
+      const ethIn = direct ? null : eth(big('0x' + words[0])), tokens = Number(big('0x' + words[direct ? 0 : 1])) / 1e18;
+      if (ethIn) totalEth += ethIn;
+      let when = ''; try { const b = await rpc('eth_getBlockByNumber', [l.blockNumber, false]); when = new Date(Number(big(b.timestamp)) * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); } catch (e) {}
+      return { when, token, to, ethIn, tokens, tx: l.transactionHash, claim: l.topics[1] };
+    }));
+    $('paidusd').innerHTML = (ethUsd ? fmt(totalEth * ethUsd, 2) : fmt(totalEth) ) + '<small>' + (ethUsd ? 'USD' : 'ETH') + '</small>';
+    $('payouts').innerHTML = rows.length ? rows.map(r => `<div class="row"><span class="d">${r.when}</span><span class="t">${fmt(r.tokens, 6)} tokens → <a href="${EXPL}/address/${r.to}" target="_blank" rel="noopener">${short(r.to)}</a><small>token ${short(r.token)} · claim ${r.claim.slice(2, 10)}</small></span><span class="v">${r.ethIn != null ? fmt(r.ethIn, 5) + ' ETH' : 'direct'}<small><a href="${EXPL}/tx/${r.tx}" target="_blank" rel="noopener">${short(r.tx)} ↗</a></small></span></div>`).join('')
+      : '<div class="empty">No payout yet. The first claims are paid by hand while the pool is small; each one will appear here with its transaction.</div>';
+  } catch (e) { $('err').textContent = 'Could not read the chain right now: ' + e.message; }
+})();
+</script>
+</body>
+</html>

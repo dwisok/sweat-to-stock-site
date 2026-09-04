@@ -1041,7 +1041,8 @@
       <div class="kv"><span>Minimum claim</span><b>none, claim any time</b></div>
       <div class="kv"><span>Payout</span><b>within ${CFG.PAYOUT_WINDOW}</b></div>
       ${CFG.CONTACT ? `<div class="kv"><span>Contact</span><b>${CFG.CONTACT}</b></div>` : ''}
-      <div class="row2"><a class="cta-big ghost" style="text-decoration:none" href="../#faq">FAQ</a><button class="cta-big danger" id="s-reset">Erase everything</button></div>
+      <div class="row2"><a class="cta-big ghost" style="text-decoration:none" href="../treasury.html">Treasury &amp; payouts</a><a class="cta-big ghost" style="text-decoration:none" href="../#faq">FAQ</a></div>
+      <div class="row2"><button class="cta-big danger" id="s-reset" style="grid-column:1 / -1">Erase everything</button></div>
       <p class="note">Sweat-to-Stock app v${APP_VERSION}</p>`);
     $('s-wallet').addEventListener('input', e => { const v = e.target.value.trim(); e.target.classList.toggle('bad', v && !validAddr(v)); if (validAddr(v) || !v) { S.wallet = v; save(); renderWallet(); } });
     if ($('s-install')) $('s-install').onclick = async () => { installEvt.prompt(); const r = await installEvt.userChoice; if (r.outcome === 'accepted') { installEvt = null; closeSheet(); toast('Added to your home screen'); } };

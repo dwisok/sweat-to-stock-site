@@ -1,6 +1,6 @@
 // Sweat-to-Stock service worker: the app works offline (a run never depends on the network).
-const VERSION = 'v1';
-const SHELL = ['./app/', './app/index.html', './app/config.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-512-maskable.png'];
+const VERSION = 'v2';
+const SHELL = ['./app/', './app/index.html', './app/config.js', './treasury.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-512-maskable.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
